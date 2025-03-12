@@ -1,5 +1,5 @@
-use solana_program::account_info::AccountInfo;
 use cvlr_log::clog;
+use solana_program::account_info::AccountInfo;
 
 #[macro_export]
 macro_rules! clog_acc_info {
@@ -8,7 +8,6 @@ macro_rules! clog_acc_info {
     };
 }
 
-
 #[inline(always)]
 pub fn cvlr_clog_account_info(tag: &str, acc_info: &AccountInfo) {
     clog!(tag);
@@ -16,5 +15,4 @@ pub fn cvlr_clog_account_info(tag: &str, acc_info: &AccountInfo) {
     clog!(acc_info.data_len());
     clog!(acc_info.is_signer);
     clog!(acc_info.is_writable);
-    
 }

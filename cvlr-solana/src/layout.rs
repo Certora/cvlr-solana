@@ -276,9 +276,6 @@ macro_rules! acc_infos_with_mem_layout {
     };
 }
 
-
-
-
 pub fn cvlr_new_account_info() -> AccountInfo<'static> {
     unsafe { cvlr_new_account_info_unchecked() }
 }
@@ -312,12 +309,12 @@ mod rt_impls {
 #[allow(unused_assignments)]
 unsafe fn cvlr_new_account_info_unchecked() -> AccountInfo<'static> {
     use cvlr_asserts::cvlr_assume;
+    use rt_decls::CVT_alloc_slice;
     use solana_program::{
         entrypoint::{BPF_ALIGN_OF_U128, MAX_PERMITTED_DATA_INCREASE},
         pubkey::Pubkey,
     };
     use std::{alloc::Layout, cell::RefCell, mem::size_of, rc::Rc};
-    use rt_decls::CVT_alloc_slice;
 
     const MB: usize = 1024 * 1024;
     const MAX_ORIG_DATA_LEN: usize = 8 * MB;
@@ -447,9 +444,10 @@ unsafe fn _cvlr_new_account_info_unchecked() -> AccountInfo<'static> {
     // -- limit size of data to what is allocated
     cvlr_asserts::cvlr_assume!(data_len <= MAX_ORIG_DATA_LEN);
 
-    let data = Rc::new(RefCell::new(
-        std::slice::from_raw_parts_mut(input.add(offset), data_len)
-    ));
+    let data = Rc::new(RefCell::new(std::slice::from_raw_parts_mut(
+        input.add(offset),
+        data_len,
+    )));
 
     offset += data_len + MAX_PERMITTED_DATA_INCREASE;
     offset += (offset as *const u8).align_offset(BPF_ALIGN_OF_U128);
@@ -470,7 +468,7 @@ unsafe fn _cvlr_new_account_info_unchecked() -> AccountInfo<'static> {
     }
 }
 
-pub fn cvlr_deserialize_nondet_accounts() -> [AccountInfo<'static>; 16]  {
+pub fn cvlr_deserialize_nondet_accounts() -> [AccountInfo<'static>; 16] {
     [
         cvlr_new_account_info(),
         cvlr_new_account_info(),
@@ -490,4 +488,3 @@ pub fn cvlr_deserialize_nondet_accounts() -> [AccountInfo<'static>; 16]  {
         cvlr_new_account_info(),
     ]
 }
-

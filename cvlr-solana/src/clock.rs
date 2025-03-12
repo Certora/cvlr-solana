@@ -8,7 +8,7 @@ static mut CVT_CLOCK_SLOT: Option<Slot> = None;
 // but we tell the rustc to inline them.
 
 #[allow(non_snake_case)]
-#[inline(always)] 
+#[inline(always)]
 pub fn cvt_get_next_clock_slot() -> Slot {
     unsafe {
         let new_slot = Slot::from(nondet::<u64>());
@@ -23,12 +23,10 @@ pub fn cvt_get_next_clock_slot() -> Slot {
     }
 }
 
-#[allow(non_snake_case,static_mut_refs)]
-#[inline(always)] 
+#[allow(non_snake_case, static_mut_refs)]
+#[inline(always)]
 pub fn cvt_get_clock_slot() -> Slot {
     // need to call at least once cvt_get_next_clock_slot before calling this function
-    cvlr_asserts::cvlr_assert!(unsafe{CVT_CLOCK_SLOT.is_some()});
-    return  unsafe { CVT_CLOCK_SLOT.unwrap() }
+    cvlr_asserts::cvlr_assert!(unsafe { CVT_CLOCK_SLOT.is_some() });
+    return unsafe { CVT_CLOCK_SLOT.unwrap() };
 }
-
-

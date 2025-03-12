@@ -34,5 +34,3 @@ macro_rules! invoke_signed {
         solana_program::program::invoke_signed_unchecked($instruction, $acc_infos, $seeds)
     }};
 }
-
-
