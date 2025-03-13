@@ -1,7 +1,6 @@
 use crate::nondet::cvlr_nondet_account_info;
 use solana_program::account_info::AccountInfo;
 
-
 /// Memory layout of AccountInfo field `data` as `Rc<RefCell<&[u8]>>`
 macro_rules! mem_layout_rc_data {
     ($acc_info: expr, $start_addr: expr, $num_acc: expr) => {{
