@@ -43,7 +43,7 @@ pub fn cvlr_nondet_pubkey() -> Pubkey {
 }
 
 pub fn cvlr_nondet_option_pubkey() -> Option<Pubkey> {
-    cvlr_nondet::nondet_option(|| cvlr_nondet_pubkey())
+    cvlr_nondet::nondet_option(cvlr_nondet_pubkey)
 }
 
 pub fn cvlr_nondet_coption<T, F>(func: F) -> COption<T>
@@ -58,5 +58,5 @@ where
 }
 
 pub fn cvlr_nondet_coption_pubkey() -> COption<Pubkey> {
-    cvlr_nondet_coption(|| cvlr_nondet_pubkey())
+    cvlr_nondet_coption(cvlr_nondet_pubkey)
 }

@@ -12,14 +12,11 @@ static mut CVT_CLOCK_SLOT: Option<Slot> = None;
 pub fn cvt_get_next_clock_slot() -> Slot {
     unsafe {
         let new_slot = Slot::from(nondet::<u64>());
-        match CVT_CLOCK_SLOT {
-            Some(old_slot) => {
-                cvlr_asserts::cvlr_assume!(new_slot > old_slot);
-            }
-            _ => {}
+        if let Some(old_slot) = CVT_CLOCK_SLOT {
+            cvlr_asserts::cvlr_assume!(new_slot > old_slot);
         }
         CVT_CLOCK_SLOT = Some(new_slot);
-        return new_slot;
+        new_slot
     }
 }
 
@@ -28,5 +25,5 @@ pub fn cvt_get_next_clock_slot() -> Slot {
 pub fn cvt_get_clock_slot() -> Slot {
     // need to call at least once cvt_get_next_clock_slot before calling this function
     cvlr_asserts::cvlr_assert!(unsafe { CVT_CLOCK_SLOT.is_some() });
-    return unsafe { CVT_CLOCK_SLOT.unwrap() };
+    unsafe { CVT_CLOCK_SLOT.unwrap() }
 }

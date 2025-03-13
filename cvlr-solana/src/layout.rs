@@ -1,42 +1,6 @@
 use crate::nondet::cvlr_nondet_account_info;
 use solana_program::account_info::AccountInfo;
 
-/**
-
-The function `fun_acc_infos_with_mem_layout` returns 16 AccountInfo
-initialized non-deterministically.
-
-While the contents of the accounts are unconstrained, this function
-assigns fixed addresses to any field that contains a pointer or
-reference: `key`, `lamports`, `data`, and `owner`.
-
-The purpose of this is to eliminate spurious counterexamples while
-making easier the debugging of counterexamples.  This assignment of
-fixed addresses should be sound since no Solana contract should branch
-on whether, for instance, a public key starts at some particular
-address in the SVM (Solana Virtual Machine).
-
-```
- pub struct AccountInfo<'a> {
-     /// Public key of the account
-     pub key: &'a Pubkey,
-     /// The lamports in the account.  Modifiable by programs.
-     pub lamports: Rc<RefCell<&'a mut u64>>,
-     /// The data held in this account.  Modifiable by programs.
-     pub data: Rc<RefCell<&'a mut [u8]>>,
-     /// Program that owns this account
-     pub owner: &'a Pubkey,
-     /// The epoch at which this account will next owe rent
-     pub rent_epoch: Epoch,
-     /// Was the transaction signed by this account's public key?
-     pub is_signer: bool,
-     /// Is the account writable?
-     pub is_writable: bool,
-     /// This account's data contains a loaded program (and is now read-only)
-     pub executable: bool
- }
-```
- **/
 
 /// Memory layout of AccountInfo field `data` as `Rc<RefCell<&[u8]>>`
 macro_rules! mem_layout_rc_data {
@@ -92,6 +56,43 @@ macro_rules! mem_layout_owner {
     }};
 }
 
+/// The function `fun_acc_infos_with_mem_layout` returns 16 AccountInfo
+/// initialized non-deterministically.
+///
+/// While the contents of the accounts are unconstrained, this function
+/// assigns fixed addresses to any field that contains a pointer or
+/// reference: `key`, `lamports`, `data`, and `owner`.
+///
+/// The purpose of this is to eliminate spurious counterexamples while
+/// making easier the debugging of counterexamples.  This assignment of
+/// fixed addresses should be sound since no Solana contract should branch
+/// on whether, for instance, a public key starts at some particular
+/// address in the SVM (Solana Virtual Machine).
+///
+/// ```
+/// use std::cell::RefCell;
+/// use std::rc::Rc;
+/// use solana_program::{pubkey::Pubkey, clock::Epoch};
+///
+/// pub struct AccountInfo<'a> {
+///     /// Public key of the account
+///     pub key: &'a Pubkey,
+///     /// The lamports in the account.  Modifiable by programs.
+///     pub lamports: Rc<RefCell<&'a mut u64>>,
+///     /// The data held in this account.  Modifiable by programs.
+///     pub data: Rc<RefCell<&'a mut [u8]>>,
+///     /// Program that owns this account
+///     pub owner: &'a Pubkey,
+///     /// The epoch at which this account will next owe rent
+///     pub rent_epoch: Epoch,
+///     /// Was the transaction signed by this account's public key?
+///     pub is_signer: bool,
+///     /// Is the account writable?
+///     pub is_writable: bool,
+///     /// This account's data contains a loaded program (and is now read-only)
+///     pub executable: bool
+/// }
+/// ```
 pub fn fun_acc_infos_with_mem_layout() -> [AccountInfo<'static>; 16] {
     let acc1 = cvlr_nondet_account_info();
     let acc2 = cvlr_nondet_account_info();
@@ -256,18 +257,11 @@ pub fn fun_acc_infos_with_mem_layout() -> [AccountInfo<'static>; 16] {
         mem_layout_owner!(acc16, start_addr, 15);
     }
 
-    return [
+    [
         acc1, acc2, acc3, acc4, acc5, acc6, acc7, acc8, acc9, acc10, acc11, acc12, acc13, acc14,
         acc15, acc16,
-    ];
+    ]
 }
-
-// #[macro_export]
-// macro_rules! acc_infos_with_mem_layout {
-//     () => {
-//         $crate::fun_acc_infos_with_mem_layout()
-//     };
-// }
 
 #[macro_export]
 macro_rules! acc_infos_with_mem_layout {
