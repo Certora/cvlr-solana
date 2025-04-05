@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+  - `pubkey::Pk` is a wrapper for Pubkey for easy logging 
 
 ### Changed
 

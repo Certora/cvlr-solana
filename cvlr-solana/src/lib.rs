@@ -3,6 +3,7 @@ mod layout;
 mod log;
 mod macros;
 mod nondet;
+pub mod pubkey;
 
 pub mod token;
 
