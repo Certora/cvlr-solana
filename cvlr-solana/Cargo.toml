@@ -17,9 +17,9 @@ default = []
 rt = ["cvlr-nondet/rt", "cvlr-asserts/rt", "cvlr-mathint/rt"]
 
 [dependencies]
-solana-program = ">=1.18, <2"
-spl-token = { version = "4.0.3" }
-spl-token-2022 = { version = "3" }
+solana-program = ">=1.18, <2.2"
+spl-token = ">=4.0.3, <8"
+spl-token-2022 = ">=3.0.5, <8"
 arrayref = "0.3"
 
 cvlr-asserts = { workspace = true }
