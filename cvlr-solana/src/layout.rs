@@ -347,6 +347,7 @@ unsafe fn cvlr_new_account_info_unchecked() -> AccountInfo<'static> {
     // let lamports_ptr: &u64 = &mut *(input.add(offset) as *mut u64);
     let lamports_ptr: &mut u64 =
         &mut *(CVT_alloc_slice(input, offset, size_of::<u64>()) as *mut u64);
+    cvlr_assume!(cvlr_mathint::is_u64(*lamports_ptr));
     let lamports = Rc::new(RefCell::new(lamports_ptr));
     offset += size_of::<u64>();
 
@@ -374,6 +375,7 @@ unsafe fn cvlr_new_account_info_unchecked() -> AccountInfo<'static> {
     // -- place rent_epoch at the end of the data segment
     offset = SIZE - size_of::<u64>();
     let rent_epoch = *(input.add(offset) as *const u64);
+    cvlr_assume!(cvlr_mathint::is_u64(rent_epoch));
     offset += size_of::<u64>();
 
     AccountInfo {
