@@ -179,6 +179,7 @@ pub fn spl_close_account<'a>(
     Ok(())
 }
 
+#[macro_export]
 macro_rules! impl_nondet_mint {
     ($name:ident, $mint_ty:ty) => {
         pub fn $name() -> $mint_ty {
@@ -194,5 +195,5 @@ macro_rules! impl_nondet_mint {
     };
 }
 
-impl_nondet_mint!(cvlr_nondet_token_mint, spl_token::state::Mint);
-impl_nondet_mint!(cvlr_nondet_token_2022_mint, spl_token_2022::state::Mint);
+// impl_nondet_mint!(cvlr_nondet_token_mint, spl_token::state::Mint);
+// impl_nondet_mint!(cvlr_nondet_token_2022_mint, spl_token_2022::state::Mint);
