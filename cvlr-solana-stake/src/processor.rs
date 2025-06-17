@@ -15,7 +15,10 @@ use solana_program::{
     sysvar::Sysvar,
 };
 
-use crate::state::{stake_from_account_info_unchecked, stake_to_slice_unchecked};
+use crate::state::{
+    empty_stake_flags, nondet_meta, nondet_stake, stake_from_account_info_unchecked,
+    stake_to_slice_unchecked,
+};
 
 #[cvlr_early_panic::early_panic]
 pub fn process_withdraw(accounts: &[AccountInfo], withdraw_lamports: u64) -> ProgramResult {
@@ -353,7 +356,7 @@ pub fn process_merge(accounts: &[AccountInfo]) -> ProgramResult {
     // let stake_history = &StakeHistorySysvar(clock.epoch);
 
     if source_stake_account_info.key == destination_stake_account_info.key {
-        panic!(); 
+        panic!();
         // return Err(ProgramError::InvalidArgument);
     }
 
@@ -383,8 +386,14 @@ pub fn process_merge(accounts: &[AccountInfo]) -> ProgramResult {
     // msg!("Merging stake accounts");
     // AG: this does not properly change the state of the destination account
     // if let Some(merged_state) = destination_merge_kind.merge(source_merge_kind, clock)? {
-        // set_stake_state(destination_stake_account_info, &merged_state)?;
+    // set_stake_state(destination_stake_account_info, &merged_state)?;
     // }
+
+    // -- completely reset destination stake. This might be too abstract
+    set_stake_state(
+        destination_stake_account_info,
+        &StakeStateV2::Stake(nondet_meta(), nondet_stake(), empty_stake_flags()),
+    )?;
 
     // Source is about to be drained, de-initialize its state
     set_stake_state(source_stake_account_info, &StakeStateV2::Uninitialized)?;
@@ -412,6 +421,7 @@ pub(crate) fn validate_delegated_amount(
     Ok(stake_amount)
 }
 
+#[inline(always)]
 pub(crate) fn new_stake(stake: u64, voter_pubkey: &Pubkey, activation_epoch: u64) -> Stake {
     Stake {
         delegation: Delegation::new(voter_pubkey, stake, activation_epoch),
@@ -475,6 +485,7 @@ fn do_authorize(
     }
 }
 
+#[inline(always)]
 fn meta_authorized_authorize(
     meta: &mut Meta,
     new_authority: &Pubkey,
@@ -486,6 +497,7 @@ fn meta_authorized_authorize(
     }
 }
 
+#[inline(always)]
 fn relocate_lamports(
     source_account_info: &AccountInfo,
     destination_account_info: &AccountInfo,
@@ -502,16 +514,19 @@ fn relocate_lamports(
     }
 }
 
+#[inline(always)]
 fn get_stake_state(acc_info: &AccountInfo) -> Result<StakeStateV2, ProgramError> {
     Ok(stake_from_account_info_unchecked(acc_info))
 }
 
+#[inline(always)]
 fn set_stake_state(acc: &AccountInfo, stake: &StakeStateV2) -> ProgramResult {
     stake_to_slice_unchecked(&mut acc.data.borrow_mut()[..], stake);
     Ok(())
 }
 
 /// Return non-deterministic amount in range
+#[inline(always)]
 fn get_effective_stake(stake: &Stake) -> u64 {
     let effective_stake: u64 = nondet();
     cvlr_assume!(effective_stake <= stake.delegation.stake);
