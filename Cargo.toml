@@ -43,3 +43,5 @@ cvlr-asserts = { version=">= 0.4.0, <1" }
 cvlr-mathint = { version=">= 0.4.0, <1" }
 cvlr-nondet = { version=">= 0.4.0, <1" }
 cvlr-log = { version=">= 0.4.0, <1" }
+cvlr-early-panic = { version=">= 0.4.0, <1" }
+cvlr-macros = { version=">= 0.4.0, <1" }
