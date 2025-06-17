@@ -24,3 +24,5 @@ cvlr-asserts = { workspace = true }
 cvlr-nondet = { workspace = true }
 cvlr-mathint = { workspace = true }
 cvlr-log = { workspace = true }
+cvlr-early-panic = { version=">= 0.4.0, <1" }
+cvlr-macros = { version=">= 0.4.0, <1" }

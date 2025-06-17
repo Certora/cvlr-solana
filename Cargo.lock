@@ -591,6 +591,18 @@ dependencies = [
 ]
 
 [[package]]
+name = "cvlr-macros"
+version = "0.4.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "2ddb1aab9e865d13f5b97d5eb3b8417457543b725e9d95febb8bcd9e124a4414"
+dependencies = [
+ "darling",
+ "proc-macro2",
+ "quote",
+ "syn 2.0.100",
+]
+
+[[package]]
 name = "cvlr-mathint"
 version = "0.4.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -615,7 +627,9 @@ version = "0.5.0"
 dependencies = [
  "arrayref",
  "cvlr-asserts",
+ "cvlr-early-panic",
  "cvlr-log",
+ "cvlr-macros",
  "cvlr-mathint",
  "cvlr-nondet",
  "solana-program 1.18.26",
