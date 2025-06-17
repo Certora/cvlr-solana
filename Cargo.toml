@@ -1,7 +1,8 @@
 [workspace]
 resolver = "2"
 members = [
-    "cvlr-solana"
+    "cvlr-solana",
+    "cvlr-solana-stake"
 ]
 
 [workspace.package]
@@ -38,8 +39,12 @@ quote = "1"
 syn = "2"
 macrotest = "1"
 trybuild = "1"
+borsh = "1.5"
 
 cvlr-asserts = { version=">= 0.4.0, <1" }
 cvlr-mathint = { version=">= 0.4.0, <1" }
 cvlr-nondet = { version=">= 0.4.0, <1" }
 cvlr-log = { version=">= 0.4.0, <1" }
+cvlr-early-panic = { version=">= 0.4.0, <1" }
+
+cvlr-solana = { path = "cvlr-solana", version = "=0.5.0"}
