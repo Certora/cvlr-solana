@@ -129,7 +129,7 @@ pub fn process_deactivate(accounts: &[AccountInfo]) -> ProgramResult {
 
 pub fn process_authorize(
     accounts: &[AccountInfo],
-    new_authority: Pubkey,
+    new_authority: &Pubkey,
     authority_type: StakeAuthorize,
 ) -> ProgramResult {
     let account_info_iter = &mut accounts.iter();
@@ -151,7 +151,7 @@ pub fn process_authorize(
     // skips authorization checks and always updates the authority
     do_authorize(
         stake_account_info,
-        &new_authority,
+        new_authority,
         authority_type,
         None,
         clock,
@@ -498,7 +498,7 @@ fn meta_authorized_authorize(
 }
 
 #[inline(always)]
-fn relocate_lamports(
+pub fn relocate_lamports(
     source_account_info: &AccountInfo,
     destination_account_info: &AccountInfo,
     lamports: u64,
