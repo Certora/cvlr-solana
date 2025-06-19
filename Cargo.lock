@@ -634,7 +634,20 @@ dependencies = [
  "cvlr-nondet",
  "cvlr-solana",
  "solana-program 2.3.0",
- "solana-stake-interface",
+]
+
+[[package]]
+name = "cvlr-solana-token"
+version = "0.5.0"
+dependencies = [
+ "arrayref",
+ "cvlr-asserts",
+ "cvlr-early-panic",
+ "cvlr-log",
+ "cvlr-mathint",
+ "cvlr-nondet",
+ "cvlr-solana",
+ "solana-program 2.3.0",
 ]
 
 [[package]]
