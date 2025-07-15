@@ -41,6 +41,7 @@ syn = "2"
 macrotest = "1"
 trybuild = "1"
 borsh = "1.5"
+solana-program = "1.18"
 
 cvlr-asserts = { version=">= 0.4.0, <1" }
 cvlr-mathint = { version=">= 0.4.0, <1" }

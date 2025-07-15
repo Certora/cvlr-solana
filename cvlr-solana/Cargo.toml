@@ -17,7 +17,7 @@ default = []
 rt = ["cvlr-nondet/rt", "cvlr-asserts/rt", "cvlr-mathint/rt"]
 
 [dependencies]
-solana-program = ">=1.18"
+solana-program = { workspace =  true }
 arrayref = "0.3"
 
 cvlr-asserts = { workspace = true }
