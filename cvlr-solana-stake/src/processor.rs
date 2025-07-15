@@ -1,5 +1,7 @@
 //! Instructions
 
+use std::io::Write;
+
 use cvlr_asserts::cvlr_assume;
 use cvlr_nondet::nondet;
 use solana_program::{
@@ -81,7 +83,8 @@ pub fn process_withdraw(accounts: &[AccountInfo], withdraw_lamports: u64) -> Pro
         }
 
         // De-initialize state upon zero balance
-        set_stake_state(source_stake_account_info, &StakeStateV2::Uninitialized)?;
+        // set_stake_state(source_stake_account_info, &StakeStateV2::Uninitialized)?;
+        write_uninitialized_stake(source_stake_account_info)?;
     } else {
         // a partial withdrawal must not deplete the reserve
         let withdraw_lamports_and_reserve = withdraw_lamports.checked_add(reserve).unwrap();
@@ -327,7 +330,8 @@ pub fn process_split(accounts: &[AccountInfo], split_lamports: u64) -> ProgramRe
 
     // De-initialize state upon zero balance
     if split_lamports == source_lamport_balance {
-        set_stake_state(source_stake_account_info, &StakeStateV2::Uninitialized)?;
+        // set_stake_state(source_stake_account_info, &StakeStateV2::Uninitialized)?;
+        write_uninitialized_stake(source_stake_account_info)?
     }
 
     relocate_lamports(
@@ -396,7 +400,8 @@ pub fn process_merge(accounts: &[AccountInfo]) -> ProgramResult {
     )?;
 
     // Source is about to be drained, de-initialize its state
-    set_stake_state(source_stake_account_info, &StakeStateV2::Uninitialized)?;
+    // set_stake_state(source_stake_account_info, &StakeStateV2::Uninitialized)?;
+    write_uninitialized_stake(source_stake_account_info)?;
 
     // Drain the source stake account
     relocate_lamports(
@@ -531,4 +536,17 @@ fn get_effective_stake(stake: &Stake) -> u64 {
     let effective_stake: u64 = nondet();
     cvlr_assume!(effective_stake <= stake.delegation.stake);
     effective_stake
+}
+
+#[inline(always)]
+fn write_uninitialized_stake(acc: &AccountInfo) -> ProgramResult {
+    write_uninitialized_stake_to_slice(&mut acc.data.borrow_mut()[..]);
+    Ok(())
+}
+
+#[inline(always)]
+fn write_uninitialized_stake_to_slice(data: &mut [u8]) {
+    cvlr_assume!(data.len() == StakeStateV2::size_of());
+    let mut buf = data;
+    buf.write_all(&0u32.to_le_bytes()).unwrap();
 }
