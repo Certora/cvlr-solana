@@ -1,5 +1,4 @@
 mod clock;
-pub mod cpis;
 mod layout;
 mod log;
 mod macros;
