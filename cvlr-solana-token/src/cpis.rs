@@ -16,6 +16,7 @@ use solana_program::{
 
 /// Creates a `Transfer` instruction.
 #[cvlr_early_panic::early_panic]
+#[inline(always)]
 pub fn transfer(
     token_program_id: &Pubkey,
     source_pubkey: &Pubkey,
@@ -197,9 +198,10 @@ pub fn transfer_checked(
 /// Writes the Pubkey of the `spl_token::id()` directly into a `Pubkey` and
 /// returns it. This is used to ensure that the Certora Prover can
 /// recognize the `spl_token` program ID when analyzing the CPI invocations.
+#[inline(always)]
 fn write_spl_token_pubkey() -> Pubkey {
     #[allow(deprecated)]
-    let mut pubkey = Pubkey::new(&[0u8; 32]);
+    let mut pubkey = Pubkey::default();
     unsafe {
         // Get a mutable pointer to the first byte.
         let ptr = &mut pubkey as *mut Pubkey as *mut u64;
@@ -243,7 +245,7 @@ pub fn cvlr_invoke_signed_transfer(
     let dst_info = &account_infos[1];
     let authority_info = &account_infos[2];
     let amount = u64::from_le_bytes(instruction.data[1..9].try_into().unwrap());
-    super::token::spl_token_transfer(src_info, dst_info, authority_info, amount)
+    cvlr_solana::token::spl_token_transfer(src_info, dst_info, authority_info, amount)
 }
 
 #[inline(never)]
@@ -272,7 +274,7 @@ pub fn cvlr_invoke_signed_mint_to(
     let dst_info = &account_infos[1];
     let authority_info = &account_infos[2];
     let amount = u64::from_le_bytes(instruction.data[1..9].try_into().unwrap());
-    super::token::spl_mint_to(mint_info, dst_info, authority_info, amount)
+    cvlr_solana::token::spl_mint_to(mint_info, dst_info, authority_info, amount)
 }
 
 #[inline(never)]
@@ -298,7 +300,7 @@ pub fn cvlr_invoke_signed_burn(
     let mint_info = &account_infos[1];
     let authority_info = &account_infos[2];
     let amount = u64::from_le_bytes(instruction.data[1..9].try_into().unwrap());
-    super::token::spl_burn(mint_info, src_info, authority_info, amount)
+    cvlr_solana::token::spl_burn(mint_info, src_info, authority_info, amount)
 }
 
 #[inline(never)]
@@ -326,7 +328,7 @@ pub fn cvlr_invoke_signed_close_account(
     let account_info = &account_infos[0];
     let dest_info = &account_infos[1];
     let owner_info = &account_infos[2];
-    super::token::spl_close_account(account_info, dest_info, owner_info)
+    cvlr_solana::token::spl_close_account(account_info, dest_info, owner_info)
 }
 
 #[inline(never)]
@@ -356,7 +358,7 @@ pub fn cvlr_invoke_signed_transfer_checked(
     let dst_info = &account_infos[2];
     let authority_info = &account_infos[3];
     let amount = u64::from_le_bytes(instruction.data[1..9].try_into().unwrap());
-    super::token::spl_token_transfer(src_info, dst_info, authority_info, amount)
+    cvlr_solana::token::spl_token_transfer(src_info, dst_info, authority_info, amount)
 }
 
 /// Macro to initialize the CVLR Solana module.
@@ -365,14 +367,13 @@ pub fn cvlr_invoke_signed_transfer_checked(
 #[macro_export]
 macro_rules! cvlr_solana_init {
     () => {
-        cvlr_solana::cvlr_solana_init!(init_cvlr_solana);
+        $crate::cvlr_solana_init!(init_cvlr_solana);
     };
 
     ($wrapper_name:ident) => {
         #[no_mangle]
         pub fn $wrapper_name() {
-            use cvlr_solana::cpis::*;
-            make_invoke_mocks_available();
+            $crate::cpis::make_invoke_mocks_available();
         }
     };
 }
@@ -381,7 +382,7 @@ macro_rules! cvlr_solana_init {
 /// Certora Prover to use. This can be automatically injected in the analyzed
 /// code with the `cvlr_solana_init!` macro.
 pub fn make_invoke_mocks_available() {
-    let account_infos = super::cvlr_deserialize_nondet_accounts();
+    let account_infos = cvlr_solana::cvlr_deserialize_nondet_accounts();
     let account_info_iter = &mut account_infos.iter();
     let acc1: &AccountInfo = next_account_info(account_info_iter).unwrap();
     let acc2: &AccountInfo = next_account_info(account_info_iter).unwrap();
