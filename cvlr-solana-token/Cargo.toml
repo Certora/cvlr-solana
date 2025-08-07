@@ -19,7 +19,7 @@ rt = ["cvlr-nondet/rt", "cvlr-asserts/rt", "cvlr-mathint/rt"]
 [dependencies]
 solana-program = { workspace = true}
 arrayref = "0.3"
-spl-token = { version = "4", features = ["no-entrypoint"] }
+spl-token = { version = "8", features = ["no-entrypoint"] }
 
 
 cvlr-asserts = { workspace = true }
