@@ -15,6 +15,7 @@ use solana_program::{
  ******************************************************************************/
 
 /// Creates a `Transfer` instruction.
+/// Substitutes https://docs.rs/spl-token/8.0.0/spl_token/instruction/fn.transfer.html.
 #[cvlr_early_panic::early_panic]
 #[inline(always)]
 pub fn transfer(
@@ -48,6 +49,7 @@ pub fn transfer(
 }
 
 /// Creates a `MintTo` instruction.
+/// Substitutes https://docs.rs/spl-token/8.0.0/spl_token/instruction/fn.mint_to.html.
 #[cvlr_early_panic::early_panic]
 pub fn mint_to(
     token_program_id: &Pubkey,
@@ -80,6 +82,7 @@ pub fn mint_to(
 }
 
 /// Creates a `Burn` instruction.
+/// Substitutes https://docs.rs/spl-token/8.0.0/spl_token/instruction/fn.burn.html.
 #[cvlr_early_panic::early_panic]
 pub fn burn(
     token_program_id: &Pubkey,
@@ -112,6 +115,7 @@ pub fn burn(
 }
 
 /// Creates a `CloseAccount` instruction.
+/// Substitutes https://docs.rs/spl-token/8.0.0/spl_token/instruction/fn.close_account.html
 #[cvlr_early_panic::early_panic]
 pub fn close_account(
     token_program_id: &Pubkey,
@@ -159,6 +163,7 @@ pub fn close_account(
 }
 
 /// Creates a `TransferChecked` instruction.
+/// Substitutes https://docs.rs/spl-token/8.0.0/spl_token/instruction/fn.transfer_checked.html.
 #[allow(clippy::too_many_arguments)]
 #[cvlr_early_panic::early_panic]
 pub fn transfer_checked(
