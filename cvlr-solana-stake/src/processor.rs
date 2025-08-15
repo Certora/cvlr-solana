@@ -393,10 +393,28 @@ pub fn process_merge(accounts: &[AccountInfo]) -> ProgramResult {
     // set_stake_state(destination_stake_account_info, &merged_state)?;
     // }
 
-    // -- completely reset destination stake. This might be too abstract
+    // -- metas must match on authorized field for successful merge
+    let source_meta: Meta = match get_stake_state(source_stake_account_info)? {
+        StakeStateV2::Initialized(meta)
+        | StakeStateV2::Stake(meta, _, _) => meta,
+        _ => 
+        // -- okay to panic because get_if_mergable returns an error in this case
+        panic!()
+    };
+    let destination_meta: Meta = match get_stake_state(destination_stake_account_info)? {
+        StakeStateV2::Initialized(meta)
+        | StakeStateV2::Stake(meta, _, _) => meta,
+        _ => 
+        // -- okay to panic because get_if_mergable returns an error in this case
+        panic!()
+    };
+    // -- below is checked by function metas_can_merge 
+    cvlr_assume!(destination_meta.authorized == source_meta.authorized);
+
+    // -- reset destination stake except meta. This might be too abstract
     set_stake_state(
         destination_stake_account_info,
-        &StakeStateV2::Stake(nondet_meta(), nondet_stake(), empty_stake_flags()),
+        &StakeStateV2::Stake(destination_meta, nondet_stake(), empty_stake_flags()),
     )?;
 
     // Source is about to be drained, de-initialize its state
