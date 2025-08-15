@@ -32,7 +32,7 @@ pub mod instruction {
 }
 
 // Re-export everything from `spl_token` at the top level, except the instruction
-// overrides. This makes it possible to just import `cvlr-solana-token` as
+// overrides. This makes it possible to just import `cvlr-spl-token` as
 // `spl_token` and use it as a drop-in replacement for the original SPL Token
 // library. Under the hood, it will use our custom implementations for the
 // specified functions while keeping the rest of the SPL Token API intact.
