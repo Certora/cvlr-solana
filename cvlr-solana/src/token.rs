@@ -148,7 +148,7 @@ pub fn spl_burn<'a>(
     let mut src_amount = spl_token_account_get_amount(src_info);
 
     // -- enough funds to burn
-    cvlr_asserts::cvlr_assume!(amount >= src_amount);
+    cvlr_asserts::cvlr_assume!(src_amount >= amount);
 
     mint_supply = mint_supply.checked_sub(amount).unwrap();
     src_amount = src_amount.checked_sub(amount).unwrap();
