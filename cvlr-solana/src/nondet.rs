@@ -4,7 +4,7 @@ mod rt_decls {
     use solana_program::{account_info::AccountInfo, pubkey::Pubkey};
     #[allow(improper_ctypes)]
     extern "C" {
-        pub fn CVT_nondet_account_info() -> AccountInfo<'static>;
+        pub fn CVT_nondet_account_info<'a>() -> AccountInfo<'a>;
         pub fn CVT_nondet_pubkey() -> Pubkey;
     }
 }
@@ -30,7 +30,7 @@ mod rt_impls {
     }
 }
 
-pub fn cvlr_nondet_account_info() -> AccountInfo<'static> {
+pub fn cvlr_nondet_account_info<'a>() -> AccountInfo<'a> {
     unsafe { rt_decls::CVT_nondet_account_info() }
 }
 
