@@ -1,0 +1,30 @@
+[package]
+name = "cvlr-spl-token"
+description = "CVLR model for the Solana Token Program 8"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+categories.workspace = true
+keywords.workspace = true
+authors.workspace = true
+documentation.workspace = true
+readme.workspace = true
+homepage.workspace = true
+repository.workspace = true
+
+[features]
+default = []
+rt = ["cvlr-nondet/rt", "cvlr-asserts/rt", "cvlr-mathint/rt"]
+
+[dependencies]
+solana-program = { workspace = true}
+arrayref = "0.3"
+spl-token = { version = "8", features = ["no-entrypoint"] }
+
+
+cvlr-asserts = { workspace = true }
+cvlr-nondet = { workspace = true }
+cvlr-mathint = { workspace = true }
+cvlr-log = { workspace = true }
+cvlr-early-panic = { workspace = true }
+cvlr-solana = { workspace = true }
