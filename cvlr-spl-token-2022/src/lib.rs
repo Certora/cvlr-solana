@@ -15,7 +15,7 @@ pub mod cpis;
 // This is kept private to prevent direct access to the original implementations
 // of functions we want to override (like transfer, mint_to, etc.)
 mod base {
-    pub use spl_token::*;
+    pub use spl_token_2022::*;
 }
 
 // Create a public `instruction` module that overrides specific functions.
@@ -24,11 +24,11 @@ mod base {
 // operations.
 pub mod instruction {
     // Re-export everything from `spl_token::instruction`.
-    pub use spl_token::instruction::*;
+    pub use spl_token_2022::instruction::*;
 
     // Override specific SPL Token instruction functions with our custom
     // implementations.
-    pub use crate::cpis::{burn, close_account, mint_to, transfer, transfer_checked};
+    pub use crate::cpis::{transfer_checked};
 }
 
 // Re-export everything from `spl_token` at the top level, except the instruction

@@ -3,6 +3,7 @@ resolver = "2"
 members = [
     "cvlr-solana",
     "cvlr-spl-token",
+    "cvlr-spl-token-2022",
     "cvlr-solana-stake"
 ]
 
