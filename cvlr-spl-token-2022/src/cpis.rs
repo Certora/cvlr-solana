@@ -26,7 +26,7 @@ pub fn transfer_checked(
     amount: u64,
     decimals: u8,
 ) -> Result<Instruction, ProgramError> {
-    check_spl_token_program_account(token_program_id)?;
+    spl_token_2022::check_program_account(token_program_id).unwrap();
     let data = TokenInstruction::TransferChecked { amount, decimals }.pack();
 
     let mut accounts = Vec::with_capacity(4 + signer_pubkeys.len());
