@@ -6,15 +6,139 @@ use solana_program::{
     program_error::ProgramError,
     pubkey::Pubkey,
 };
-use spl_token_2022::{check_spl_token_program_account, instruction::TokenInstruction};
+use spl_token_2022::{check_program_account, instruction::TokenInstruction};
 
 /*******************************************************************************
  * Instructions creation
  ******************************************************************************/
 
+/// Substitutes for instructions 
+/// 
+/// Taken from https://docs.rs/spl-token-2022/7.0.0/spl_token_2022/instruction/fn.transfer_checked.html
+/// and adopted, the Instruction creating returns a fixed program_id via `write_spl_token_2022_pubkey`.
+/// 
+/// Please note, current not all instructions are supported
+
+/// Creates a `Transfer` instruction.
+pub fn transfer(
+    token_program_id: &Pubkey,
+    source_pubkey: &Pubkey,
+    destination_pubkey: &Pubkey,
+    authority_pubkey: &Pubkey,
+    signer_pubkeys: &[&Pubkey],
+    amount: u64,
+) -> Result<Instruction, ProgramError> {
+    check_program_account(token_program_id)?;
+    let data = TokenInstruction::Transfer { amount }.pack();
+
+    let mut accounts = Vec::with_capacity(3 + signer_pubkeys.len());
+    accounts.push(AccountMeta::new(*source_pubkey, false));
+    accounts.push(AccountMeta::new(*destination_pubkey, false));
+    accounts.push(AccountMeta::new_readonly(
+        *authority_pubkey,
+        signer_pubkeys.is_empty(),
+    ));
+    for signer_pubkey in signer_pubkeys.iter() {
+        accounts.push(AccountMeta::new_readonly(**signer_pubkey, true));
+    }
+
+    Ok(Instruction {
+        program_id: create_spl_token_2022_pubkey(),
+        accounts,
+        data,
+    })
+}
+
+/// Creates a `MintTo` instruction.
+pub fn mint_to(
+    token_program_id: &Pubkey,
+    mint_pubkey: &Pubkey,
+    account_pubkey: &Pubkey,
+    owner_pubkey: &Pubkey,
+    signer_pubkeys: &[&Pubkey],
+    amount: u64,
+) -> Result<Instruction, ProgramError> {
+    check_program_account(token_program_id)?;
+    let data = TokenInstruction::MintTo { amount }.pack();
+
+    let mut accounts = Vec::with_capacity(3 + signer_pubkeys.len());
+    accounts.push(AccountMeta::new(*mint_pubkey, false));
+    accounts.push(AccountMeta::new(*account_pubkey, false));
+    accounts.push(AccountMeta::new_readonly(
+        *owner_pubkey,
+        signer_pubkeys.is_empty(),
+    ));
+    for signer_pubkey in signer_pubkeys.iter() {
+        accounts.push(AccountMeta::new_readonly(**signer_pubkey, true));
+    }
+
+    Ok(Instruction {
+        program_id: create_spl_token_2022_pubkey(),
+        accounts,
+        data,
+    })
+}
+
+/// Creates a `Burn` instruction.
+pub fn burn(
+    token_program_id: &Pubkey,
+    account_pubkey: &Pubkey,
+    mint_pubkey: &Pubkey,
+    authority_pubkey: &Pubkey,
+    signer_pubkeys: &[&Pubkey],
+    amount: u64,
+) -> Result<Instruction, ProgramError> {
+    check_program_account(token_program_id)?;
+    let data = TokenInstruction::Burn { amount }.pack();
+
+    let mut accounts = Vec::with_capacity(3 + signer_pubkeys.len());
+    accounts.push(AccountMeta::new(*account_pubkey, false));
+    accounts.push(AccountMeta::new(*mint_pubkey, false));
+    accounts.push(AccountMeta::new_readonly(
+        *authority_pubkey,
+        signer_pubkeys.is_empty(),
+    ));
+    for signer_pubkey in signer_pubkeys.iter() {
+        accounts.push(AccountMeta::new_readonly(**signer_pubkey, true));
+    }
+
+    Ok(Instruction {
+        program_id: create_spl_token_2022_pubkey(),
+        accounts,
+        data,
+    })
+}
+
+/// Creates a `CloseAccount` instruction.
+pub fn close_account(
+    token_program_id: &Pubkey,
+    account_pubkey: &Pubkey,
+    destination_pubkey: &Pubkey,
+    owner_pubkey: &Pubkey,
+    signer_pubkeys: &[&Pubkey],
+) -> Result<Instruction, ProgramError> {
+    check_program_account(token_program_id)?;
+    let data = TokenInstruction::CloseAccount.pack();
+
+    let mut accounts = Vec::with_capacity(3 + signer_pubkeys.len());
+    accounts.push(AccountMeta::new(*account_pubkey, false));
+    accounts.push(AccountMeta::new(*destination_pubkey, false));
+    accounts.push(AccountMeta::new_readonly(
+        *owner_pubkey,
+        signer_pubkeys.is_empty(),
+    ));
+    for signer_pubkey in signer_pubkeys.iter() {
+        accounts.push(AccountMeta::new_readonly(**signer_pubkey, true));
+    }
+
+    Ok(Instruction {
+        program_id: create_spl_token_2022_pubkey(),
+        accounts,
+        data,
+    })
+}
+
 /// Creates a `TransferChecked` instruction.
-/// Substitutes https://docs.rs/spl-token-2022/7.0.0/spl_token_2022/instruction/fn.transfer_checked.html
-#[cvlr_early_panic::early_panic]
 #[allow(clippy::too_many_arguments)]
 pub fn transfer_checked(
     token_program_id: &Pubkey,
@@ -26,7 +150,7 @@ pub fn transfer_checked(
     amount: u64,
     decimals: u8,
 ) -> Result<Instruction, ProgramError> {
-    spl_token_2022::check_program_account(token_program_id).unwrap();
+    check_program_account(token_program_id)?;
     let data = TokenInstruction::TransferChecked { amount, decimals }.pack();
 
     let mut accounts = Vec::with_capacity(4 + signer_pubkeys.len());
@@ -40,18 +164,19 @@ pub fn transfer_checked(
     for signer_pubkey in signer_pubkeys.iter() {
         accounts.push(AccountMeta::new_readonly(**signer_pubkey, true));
     }
+
     Ok(Instruction {
-        program_id: write_spl_token_2022_pubkey(),
+        program_id: create_spl_token_2022_pubkey(),
         accounts,
         data,
     })
 }
 
-/// Writes the Pubkey of the `spl_token::id()` directly into a `Pubkey` and
+/// Writes the Pubkey of the `spl_token_2022::id()` directly into a `Pubkey` and
 /// returns it. This is used to ensure that the Certora Prover can
-/// recognize the `spl_token` program ID when analyzing the CPI invocations.
+/// recognize the `spl_token_2022` program ID when analyzing the CPI invocations.
 #[inline(always)]
-fn write_spl_token_2022_pubkey() -> Pubkey {
+fn create_spl_token_2022_pubkey() -> Pubkey {
     #[allow(deprecated)]
     let mut pubkey = Pubkey::default();
     unsafe {
