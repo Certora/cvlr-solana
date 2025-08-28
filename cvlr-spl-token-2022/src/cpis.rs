@@ -15,7 +15,7 @@ use spl_token_2022::{check_program_account, instruction::TokenInstruction};
 /// Substitutes for instructions 
 /// 
 /// Taken from https://docs.rs/spl-token-2022/7.0.0/spl_token_2022/instruction/fn.transfer_checked.html
-/// and adopted, the Instruction creating returns a fixed program_id via `write_spl_token_2022_pubkey`.
+/// and adopted, the Instruction creating returns a fixed program_id via `create_spl_token_2022_pubkey`.
 /// 
 /// Please note, current not all instructions are supported
 
