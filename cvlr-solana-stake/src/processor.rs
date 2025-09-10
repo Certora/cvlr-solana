@@ -130,6 +130,7 @@ pub fn process_deactivate(accounts: &[AccountInfo]) -> ProgramResult {
     Ok(())
 }
 
+#[cvlr_early_panic::early_panic]
 pub fn process_authorize(
     accounts: &[AccountInfo],
     new_authority: &Pubkey,
