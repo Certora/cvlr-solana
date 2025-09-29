@@ -25,10 +25,6 @@ mod base {
 pub mod instruction {
     // Re-export everything from `spl_token::instruction`.
     pub use spl_token::instruction::*;
-
-    // Override specific SPL Token instruction functions with our custom
-    // implementations.
-    pub use crate::cpis::{burn, close_account, mint_to, transfer, transfer_checked};
 }
 
 // Re-export everything from `spl_token` at the top level, except the instruction
