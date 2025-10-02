@@ -269,7 +269,7 @@ macro_rules! acc_infos_with_mem_layout {
     };
 }
 
-pub fn cvlr_new_account_info() -> AccountInfo<'static> {
+pub fn cvlr_new_account_info<'a>() -> AccountInfo<'a> {
     unsafe { cvlr_new_account_info_unchecked() }
 }
 
@@ -300,7 +300,7 @@ mod rt_impls {
 }
 
 #[allow(unused_assignments)]
-unsafe fn cvlr_new_account_info_unchecked() -> AccountInfo<'static> {
+unsafe fn cvlr_new_account_info_unchecked<'a>() -> AccountInfo<'a> {
     use cvlr_asserts::cvlr_assume;
     use rt_decls::CVT_alloc_slice;
     use solana_program::{
@@ -463,7 +463,7 @@ unsafe fn _cvlr_new_account_info_unchecked() -> AccountInfo<'static> {
     }
 }
 
-pub fn cvlr_deserialize_nondet_accounts() -> [AccountInfo<'static>; 16] {
+pub fn cvlr_deserialize_nondet_accounts<'a>() -> [AccountInfo<'a>; 16] {
     [
         cvlr_new_account_info(),
         cvlr_new_account_info(),
