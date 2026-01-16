@@ -5,7 +5,7 @@ use cvlr_asserts::*;
 use solana_program::{
     account_info::{next_account_info, AccountInfo},
     entrypoint::ProgramResult,
-    instruction::Instruction
+    instruction::Instruction,
 };
 use spl_token::instruction::transfer;
 
