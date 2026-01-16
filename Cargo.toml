@@ -7,7 +7,7 @@ members = [
 ]
 
 [workspace.package]
-version = "0.5.0"
+version = "0.4.5"
 authors = [
     "Arie Gurfinkel <arie@certora.com>",
     "Jorge A. Navas <jorge@certora.com>",
@@ -51,6 +51,6 @@ cvlr-log = { version=">= 0.4.0, <1" }
 cvlr-early-panic = { version=">= 0.4.0, <1" }
 cvlr-macros = { version=">= 0.4.0, <1" }
 
-cvlr-solana = { path = "cvlr-solana", version = "=0.5.0"}
-cvlr-solana-stake = { path = "cvlr-solana-stake", version = "=0.5.0"}
-cvlr-spl-token = { path = "cvlr-spl-token", version = "=0.5.0"}
+cvlr-solana = { path = "cvlr-solana", version = "=0.4.5"}
+cvlr-solana-stake = { path = "cvlr-solana-stake", version = "=0.4.5"}
+cvlr-spl-token = { path = "cvlr-spl-token", version = "=0.4.5"}
