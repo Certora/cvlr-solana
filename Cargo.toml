@@ -42,11 +42,15 @@ macrotest = "1"
 trybuild = "1"
 borsh = "1.5"
 solana-program = "2.2"
+arrayref = "0.3"
 
 cvlr-asserts = { version=">= 0.4.0, <1" }
 cvlr-mathint = { version=">= 0.4.0, <1" }
 cvlr-nondet = { version=">= 0.4.0, <1" }
 cvlr-log = { version=">= 0.4.0, <1" }
 cvlr-early-panic = { version=">= 0.4.0, <1" }
-cvlr-solana = { path = "cvlr-solana", version = "=0.5.0"}
 cvlr-macros = { version=">= 0.4.0, <1" }
+
+cvlr-solana = { path = "cvlr-solana", version = "=0.5.0"}
+cvlr-solana-stake = { path = "cvlr-solana-stake", version = "=0.5.0"}
+cvlr-spl-token = { path = "cvlr-spl-token", version = "=0.5.0"}

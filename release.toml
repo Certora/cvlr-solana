@@ -1,0 +1,17 @@
+# Configuration for cargo-release
+# This file configures the release process for all crates in the workspace
+# Documentation: https://github.com/crate-ci/cargo-release
+
+shared-version = true
+# Tag the release (format: v{version})
+tag = true
+# Push changes to remote
+push = true
+# Publish to crates.io
+publish = true
+# Tag message format
+tag-message = "Release {{version}}"
+# Commit message format
+pre-release-commit-message = "chore: release {{version}}"
+consolidate-commits = true
+
