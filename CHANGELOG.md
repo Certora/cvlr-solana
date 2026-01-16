@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 <!-- next-header -->
 ## [Unreleased] - ReleaseDate
+### Added
+  - model of SPL Stake in cvlr-solana-stake
+### Changed
+  - model of SPL Token is factored out into cvlr-spl-token crate
+  - bump solana program dependency to 2.x
 
 ## [0.4.5] 2026-01-16
 
