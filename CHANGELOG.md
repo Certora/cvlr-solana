@@ -13,6 +13,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Removed
 
+## [0.4.5] 2026-01-16
+
+### Fixed
+  - summary of `spl_burn`
+  - Hide static lifetime in `cvlr_new_account_info_unchecked`
+
 ## [0.4.3] 2025-04-09
 
 ### Added
@@ -63,7 +69,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Removed
 
-[unreleased]: https://github.com/Certora/cvlr/compare/v0.4.3...HEAD
+[unreleased]: https://github.com/Certora/cvlr/compare/v0.4.5...HEAD
+[0.4.5]: https://github.com/Certora/cvlr/compare/v0.4.3...v0.4.5
 [0.4.3]: https://github.com/Certora/cvlr/compare/v0.4.2...v0.4.3
 [0.4.2]: https://github.com/Certora/cvlr/compare/v0.4.1...v0.4.2
 [0.4.1]: https://github.com/Certora/cvlr/releases/tag/v0.4.0...v0.4.1
