@@ -18,8 +18,7 @@ use solana_program::{
 };
 
 use crate::state::{
-    empty_stake_flags, nondet_meta, nondet_stake, stake_from_account_info_unchecked,
-    stake_to_slice_unchecked,
+    empty_stake_flags, nondet_stake, stake_from_account_info_unchecked, stake_to_slice_unchecked,
 };
 
 #[cvlr_early_panic::early_panic]
@@ -396,20 +395,22 @@ pub fn process_merge(accounts: &[AccountInfo]) -> ProgramResult {
 
     // -- metas must match on authorized field for successful merge
     let source_meta: Meta = match get_stake_state(source_stake_account_info)? {
-        StakeStateV2::Initialized(meta)
-        | StakeStateV2::Stake(meta, _, _) => meta,
-        _ => 
+        StakeStateV2::Initialized(meta) | StakeStateV2::Stake(meta, _, _) => meta,
+        _ =>
         // -- okay to panic because get_if_mergable returns an error in this case
-        panic!()
+        {
+            panic!()
+        }
     };
     let destination_meta: Meta = match get_stake_state(destination_stake_account_info)? {
-        StakeStateV2::Initialized(meta)
-        | StakeStateV2::Stake(meta, _, _) => meta,
-        _ => 
+        StakeStateV2::Initialized(meta) | StakeStateV2::Stake(meta, _, _) => meta,
+        _ =>
         // -- okay to panic because get_if_mergable returns an error in this case
-        panic!()
+        {
+            panic!()
+        }
     };
-    // -- below is checked by function metas_can_merge 
+    // -- below is checked by function metas_can_merge
     cvlr_assume!(destination_meta.authorized == source_meta.authorized);
 
     // -- reset destination stake except meta. This might be too abstract

@@ -5,7 +5,6 @@ use cvlr_asserts::cvlr_assume;
 pub struct CvlrStdIoWrite<'a>(pub &'a mut [u8]);
 
 impl std::io::Write for CvlrStdIoWrite<'_> {
-
     /// Implementation of `write` that checks for length first
     #[inline]
     fn write(&mut self, data: &[u8]) -> std::io::Result<usize> {

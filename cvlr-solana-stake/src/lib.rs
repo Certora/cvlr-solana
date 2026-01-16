@@ -1,8 +1,8 @@
 //! Model fo Stake Program
-pub mod utils;
+pub mod processor;
 pub mod state;
 pub mod tools;
-pub mod processor;
+pub mod utils;
 
 // const PERPETUAL_NEW_WARMUP_COOLDOWN_RATE_EPOCH: Option<u64> = Some(0);
 
