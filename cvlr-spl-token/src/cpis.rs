@@ -176,12 +176,12 @@ macro_rules! cvlr_solana_init {
 /// Certora Prover to use. This can be automatically injected in the analyzed
 /// code with the `cvlr_solana_init!` macro.
 pub fn make_invoke_mocks_available() {
-    let account_infos = cvlr_solana::cvlr_deserialize_nondet_accounts();
-    let account_info_iter = &mut account_infos.iter();
-    let acc1: &AccountInfo = next_account_info(account_info_iter).unwrap();
-    let acc2: &AccountInfo = next_account_info(account_info_iter).unwrap();
-    let acc3: &AccountInfo = next_account_info(account_info_iter).unwrap();
-    let acc4: &AccountInfo = next_account_info(account_info_iter).unwrap();
+    let account_infos = cvlr_solana::cvlr_deserialize_nondet_accounts::<16>();
+    let mut account_info_iter = account_infos.iter();
+    let acc1: &AccountInfo = next_account_info(&mut account_info_iter).unwrap();
+    let acc2: &AccountInfo = next_account_info(&mut account_info_iter).unwrap();
+    let acc3: &AccountInfo = next_account_info(&mut account_info_iter).unwrap();
+    let acc4: &AccountInfo = next_account_info(&mut account_info_iter).unwrap();
     let nondet: u64 = cvlr_nondet::nondet();
     let mut token_instruction_data = Vec::new();
     token_instruction_data.extend_from_slice(&nondet.to_le_bytes());

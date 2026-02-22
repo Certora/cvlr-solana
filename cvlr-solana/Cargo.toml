@@ -37,3 +37,4 @@ cvlr-mathint = { workspace = true }
 cvlr-log = { workspace = true }
 cvlr-early-panic = { workspace = true }
 cvlr-macros = { workspace = true }
+solana-sdk = { version = "2.0.17", default-features = false }
