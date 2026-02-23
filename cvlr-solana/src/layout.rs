@@ -327,7 +327,7 @@ pub mod global_database;
 #[cfg(feature = "rt")]
 unsafe fn cvlr_new_account_info_rt<'a>(idx: usize) -> AccountInfo<'a> {
     use rt_decls::CVT_alloc_slice;
-    
+
     // copied here to avoid adding a dependency on solana_sdk
     const NON_DUP_MARKER: u8 = u8::MAX;
 
@@ -588,8 +588,6 @@ unsafe fn _cvlr_new_account_info_unchecked() -> AccountInfo<'static> {
         rent_epoch,
     }
 }
-
-
 
 #[cfg(not(feature = "rt"))]
 pub fn cvlr_deserialize_nondet_accounts<'a, const N: usize>() -> [AccountInfo<'a>; N] {
