@@ -22,9 +22,9 @@ impl GlobalDatabase {
         self.accounts.get(idx)
     }
 
-    pub(crate) fn account_ptr(&mut self, idx: usize) -> Option<*mut u8> {
+    pub(crate) fn account_ptr(&mut self, idx: usize) -> Option<ptr::NonNull<u8>> {
         let account = self.accounts.get_mut(idx)?;
-        let ptr = ptr::from_mut(account) as *mut u8;
+        let ptr = ptr::NonNull::from_mut(account).cast();
         Some(ptr)
     }
 }

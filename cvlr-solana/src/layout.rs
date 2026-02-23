@@ -284,16 +284,21 @@ pub fn cvlr_new_account_info<'a>(idx: usize) -> AccountInfo<'a> {
 }
 
 mod rt_decls {
+    use core::ptr;
+
     extern "C" {
+        #[cfg_attr(feature = "rt", allow(dead_code))]
         pub fn CVT_nondet_solana_account_space(size: usize) -> *mut u8;
-        pub fn CVT_deserialize_global_account(idx: usize) -> Option<*mut u8>;
+        #[cfg_attr(not(feature = "rt"), allow(dead_code))]
+        pub fn CVT_deserialize_global_account(idx: usize) -> Option<ptr::NonNull<u8>>;
         pub fn CVT_alloc_slice(base: *mut u8, offset: usize, size: usize) -> *mut u8;
     }
 }
 
 #[cfg(feature = "rt")]
 mod rt_impls {
-    use crate::layout::global_database::GLOBAL_DATABASE;
+    use super::global_database::GLOBAL_DATABASE;
+    use core::ptr;
     use solana_program::entrypoint::BPF_ALIGN_OF_U128;
     use std::alloc::{alloc_zeroed, Layout};
 
@@ -301,13 +306,12 @@ mod rt_impls {
     extern "C" fn CVT_nondet_solana_account_space(size: usize) -> *mut u8 {
         unsafe {
             let layout = Layout::from_size_align_unchecked(size, BPF_ALIGN_OF_U128);
-            let input = alloc_zeroed(layout);
-            input
+            alloc_zeroed(layout)
         }
     }
 
     #[no_mangle]
-    extern "C" fn CVT_deserialize_global_account(idx: usize) -> Option<*mut u8> {
+    extern "C" fn CVT_deserialize_global_account(idx: usize) -> Option<ptr::NonNull<u8>> {
         // ybd: note that all calls here return Option instead of panicing,
         // because panic is UB here and I'd rather have the caller assert this
         let guard = GLOBAL_DATABASE.get()?;
@@ -331,7 +335,9 @@ unsafe fn cvlr_new_account_info_rt<'a>(idx: usize) -> AccountInfo<'a> {
     // copied here to avoid adding a dependency on solana_sdk
     const NON_DUP_MARKER: u8 = u8::MAX;
 
-    let input = rt_decls::CVT_deserialize_global_account(idx).unwrap();
+    let input = rt_decls::CVT_deserialize_global_account(idx)
+        .unwrap()
+        .as_ptr();
 
     let mut offset: usize = 0;
 
@@ -428,11 +434,7 @@ unsafe fn cvlr_new_account_info_rt<'a>(idx: usize) -> AccountInfo<'a> {
 unsafe fn cvlr_new_account_info_unchecked<'a>() -> AccountInfo<'a> {
     use cvlr_asserts::cvlr_assume;
     use rt_decls::CVT_alloc_slice;
-    use solana_program::{
-        entrypoint::{BPF_ALIGN_OF_U128, MAX_PERMITTED_DATA_INCREASE},
-        pubkey::Pubkey,
-    };
-    use std::{alloc::Layout, cell::RefCell, mem::size_of, rc::Rc};
+    use std::alloc::Layout;
 
     const MB: usize = 1024 * 1024;
     const MAX_ORIG_DATA_LEN: usize = 8 * MB;
@@ -596,5 +598,5 @@ pub fn cvlr_deserialize_nondet_accounts<'a, const N: usize>() -> [AccountInfo<'a
 
 #[cfg(feature = "rt")]
 pub fn cvlr_deserialize_nondet_accounts<'a, const N: usize>() -> [AccountInfo<'a>; N] {
-    core::array::from_fn(|idx| cvlr_new_account_info(idx))
+    core::array::from_fn(cvlr_new_account_info)
 }
