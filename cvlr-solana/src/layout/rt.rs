@@ -5,28 +5,28 @@ use solana_program::entrypoint::{BPF_ALIGN_OF_U128, MAX_PERMITTED_DATA_INCREASE}
 use solana_program::pubkey::Pubkey;
 use std::rc::Rc;
 
-pub(crate) mod global_database {
+pub(crate) mod instruction_accounts {
     use core::ptr;
     use solana_account::Account;
     use std::sync::{Mutex, OnceLock};
 
     #[derive(Debug)]
-    pub struct GlobalDatabase {
+    pub struct InstructionAccounts {
         accounts: Vec<Account>,
     }
 
     // we assume this is single-threaded.
     pub fn init(accounts: Vec<Account>) {
-        let database = GlobalDatabase { accounts };
+        let database = InstructionAccounts { accounts };
         let guard = Mutex::new(database);
 
         // ybd: do we want to allow re-init?
-        GLOBAL_DATABASE.set(guard).expect("can only be set once");
+        INSTRUCTION_ACCOUNTS.set(guard).expect("can only be set once");
     }
 
-    pub static GLOBAL_DATABASE: OnceLock<Mutex<GlobalDatabase>> = OnceLock::new();
+    pub static INSTRUCTION_ACCOUNTS: OnceLock<Mutex<InstructionAccounts>> = OnceLock::new();
 
-    impl GlobalDatabase {
+    impl InstructionAccounts {
         pub fn get(&self, idx: usize) -> Option<&Account> {
             self.accounts.get(idx)
         }
@@ -44,7 +44,7 @@ pub fn cvlr_new_account_info<'a>(idx: usize) -> AccountInfo<'a> {
 }
 
 mod rt_impls {
-    use super::global_database::GLOBAL_DATABASE;
+    use super::instruction_accounts::INSTRUCTION_ACCOUNTS;
     use core::ptr;
     use solana_program::entrypoint::BPF_ALIGN_OF_U128;
     use std::alloc::{alloc_zeroed, Layout};
@@ -61,7 +61,7 @@ mod rt_impls {
     extern "C" fn CVT_deserialize_global_account(idx: usize) -> Option<ptr::NonNull<u8>> {
         // ybd: note that all calls here return Option instead of panicing,
         // because panic is UB here and I'd rather have the caller assert this
-        let guard = GLOBAL_DATABASE.get()?;
+        let guard = INSTRUCTION_ACCOUNTS.get()?;
         let mut db = guard.try_lock().ok()?;
         db.account_ptr(idx)
     }
