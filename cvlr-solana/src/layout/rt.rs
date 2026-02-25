@@ -1,5 +1,6 @@
 use super::common::rt_decls;
 use core::cell::RefCell;
+use core::ptr;
 use solana_program::account_info::AccountInfo;
 use solana_program::entrypoint::{BPF_ALIGN_OF_U128, MAX_PERMITTED_DATA_INCREASE};
 use solana_program::pubkey::Pubkey;
@@ -15,26 +16,28 @@ pub(crate) mod instruction_accounts {
         accounts: Vec<Account>,
     }
 
-    // we assume this is single-threaded.
-    pub fn init(accounts: Vec<Account>) {
-        let database = InstructionAccounts { accounts };
-        let guard = Mutex::new(database);
-
-        // ybd: do we want to allow re-init?
-        INSTRUCTION_ACCOUNTS.set(guard).expect("can only be set once");
-    }
-
-    pub static INSTRUCTION_ACCOUNTS: OnceLock<Mutex<InstructionAccounts>> = OnceLock::new();
+    static GLOBAL: OnceLock<Mutex<InstructionAccounts>> = OnceLock::new();
 
     impl InstructionAccounts {
-        pub fn get(&self, idx: usize) -> Option<&Account> {
+        // we assume this is single-threaded.
+        pub fn init_global(accounts: Vec<Account>) {
+            let database = InstructionAccounts { accounts };
+            let guard = Mutex::new(database);
+
+            // ybd: do we want to allow re-init?
+            GLOBAL.set(guard).expect("can only be set once");
+        }
+
+        pub fn global<'a>() -> Option<&'a Mutex<InstructionAccounts>> {
+            GLOBAL.get()
+        }
+
+        pub fn account(&self, idx: usize) -> Option<&Account> {
             self.accounts.get(idx)
         }
 
-        pub(crate) fn account_ptr(&mut self, idx: usize) -> Option<ptr::NonNull<u8>> {
-            let account = self.accounts.get_mut(idx)?;
-            let ptr = ptr::NonNull::from_mut(account).cast();
-            Some(ptr)
+        pub fn account_mut(&mut self, idx: usize) -> Option<&mut Account> {
+            self.accounts.get_mut(idx)
         }
     }
 }
@@ -44,8 +47,7 @@ pub fn cvlr_new_account_info<'a>(idx: usize) -> AccountInfo<'a> {
 }
 
 mod rt_impls {
-    use super::instruction_accounts::INSTRUCTION_ACCOUNTS;
-    use core::ptr;
+    use super::instruction_accounts::InstructionAccounts;
     use solana_program::entrypoint::BPF_ALIGN_OF_U128;
     use std::alloc::{alloc_zeroed, Layout};
 
@@ -58,27 +60,26 @@ mod rt_impls {
     }
 
     #[no_mangle]
-    extern "C" fn CVT_deserialize_global_account(idx: usize) -> Option<ptr::NonNull<u8>> {
-        // ybd: note that all calls here return Option instead of panicing,
-        // because panic is UB here and I'd rather have the caller assert this
-        let guard = INSTRUCTION_ACCOUNTS.get()?;
-        let mut db = guard.try_lock().ok()?;
-        db.account_ptr(idx)
-    }
-
-    #[no_mangle]
     extern "C" fn CVT_alloc_slice(base: *mut u8, offset: usize, _size: usize) -> *mut u8 {
         unsafe { base.add(offset) }
     }
 }
 
 unsafe fn cvlr_new_account_info_rt<'a>(idx: usize) -> AccountInfo<'a> {
+    use super::InstructionAccounts;
     use rt_decls::CVT_alloc_slice;
     use solana_program::entrypoint::NON_DUP_MARKER;
 
-    let input = rt_decls::CVT_deserialize_global_account(idx)
-        .unwrap()
-        .as_ptr();
+    let mut lock = InstructionAccounts::global()
+        .expect("already init")
+        .try_lock()
+        .expect("single-threaded");
+
+    let input = lock
+        .account_mut(idx)
+        .map(|account| ptr::from_mut(account).cast::<u8>())
+        .expect("index is valid for database");
+
     let mut offset: usize = 0;
 
     // we don't care about this marker.
