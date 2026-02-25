@@ -1,6 +1,7 @@
 use super::common::rt_decls;
 use core::cell::RefCell;
 use core::ptr;
+use solana_account::Account;
 use solana_program::account_info::AccountInfo;
 use solana_program::entrypoint::{BPF_ALIGN_OF_U128, MAX_PERMITTED_DATA_INCREASE};
 use solana_program::pubkey::Pubkey;
@@ -14,6 +15,7 @@ pub(crate) mod instruction_accounts {
     #[derive(Debug)]
     pub struct InstructionAccounts {
         accounts: Vec<Account>,
+        next_idx: usize,
     }
 
     static GLOBAL: OnceLock<Mutex<InstructionAccounts>> = OnceLock::new();
@@ -21,7 +23,10 @@ pub(crate) mod instruction_accounts {
     impl InstructionAccounts {
         // we assume this is single-threaded.
         pub fn init_global(accounts: Vec<Account>) {
-            let database = InstructionAccounts { accounts };
+            let database = InstructionAccounts {
+                accounts,
+                next_idx: 0,
+            };
             let guard = Mutex::new(database);
 
             // ybd: do we want to allow re-init?
@@ -32,18 +37,40 @@ pub(crate) mod instruction_accounts {
             GLOBAL.get()
         }
 
+        pub fn next_account(&mut self) -> Option<&mut Account> {
+            let account = self.accounts.get_mut(self.next_idx)?;
+            self.next_idx += 1;
+            Some(account)
+        }
+
         pub fn account(&self, idx: usize) -> Option<&Account> {
             self.accounts.get(idx)
         }
 
         pub fn account_mut(&mut self, idx: usize) -> Option<&mut Account> {
-            self.accounts.get_mut(idx)
+            if self.next_idx > idx {
+                panic!("can't get mutable reference to account after it has been allocated")
+            } else {
+                self.accounts.get_mut(idx)
+            }
         }
     }
 }
 
-pub fn cvlr_new_account_info<'a>(idx: usize) -> AccountInfo<'a> {
-    unsafe { cvlr_new_account_info_rt(idx) }
+/// fetches the next unallocated acount and reads it to [`AccountInfo`]
+pub fn cvlr_new_account_info<'a>() -> AccountInfo<'a> {
+    let mut global = instruction_accounts::InstructionAccounts::global()
+        .expect("global is init")
+        .try_lock()
+        .expect("running in single-threaded");
+
+    let account = global
+        .next_account()
+        .expect("next account has not been allocated yet");
+
+    let ptr = ptr::from_mut(account).cast::<u8>();
+
+    unsafe { cvlr_new_account_info_rt(ptr) }
 }
 
 mod rt_impls {
@@ -65,20 +92,9 @@ mod rt_impls {
     }
 }
 
-unsafe fn cvlr_new_account_info_rt<'a>(idx: usize) -> AccountInfo<'a> {
-    use super::InstructionAccounts;
+unsafe fn cvlr_new_account_info_rt<'a>(input: *mut u8) -> AccountInfo<'a> {
     use rt_decls::CVT_alloc_slice;
     use solana_program::entrypoint::NON_DUP_MARKER;
-
-    let mut lock = InstructionAccounts::global()
-        .expect("already init")
-        .try_lock()
-        .expect("single-threaded");
-
-    let input = lock
-        .account_mut(idx)
-        .map(|account| ptr::from_mut(account).cast::<u8>())
-        .expect("index is valid for database");
 
     let mut offset: usize = 0;
 
@@ -171,7 +187,7 @@ unsafe fn cvlr_new_account_info_rt<'a>(idx: usize) -> AccountInfo<'a> {
 }
 
 pub fn cvlr_deserialize_nondet_accounts_n<'a, const N: usize>() -> [AccountInfo<'a>; N] {
-    core::array::from_fn(cvlr_new_account_info)
+    core::array::from_fn(|_| cvlr_new_account_info())
 }
 
 /// here for API backwards-compatibility
