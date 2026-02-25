@@ -29,6 +29,7 @@ rt = ["cvlr-nondet/rt", "cvlr-asserts/rt", "cvlr-mathint/rt"]
 
 [dependencies]
 solana-program = { workspace =  true }
+solana-account = { workspace =  true }
 arrayref = { workspace = true }
 
 cvlr-asserts = { workspace = true }
@@ -37,4 +38,3 @@ cvlr-mathint = { workspace = true }
 cvlr-log = { workspace = true }
 cvlr-early-panic = { workspace = true }
 cvlr-macros = { workspace = true }
-solana-sdk = { version = "2.0.17", default-features = false }

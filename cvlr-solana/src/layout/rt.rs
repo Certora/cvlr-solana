@@ -7,7 +7,7 @@ use std::rc::Rc;
 
 pub(crate) mod global_database {
     use core::ptr;
-    use solana_sdk::account::Account;
+    use solana_account::Account;
     use std::sync::{Mutex, OnceLock};
 
     #[derive(Debug)]
@@ -74,9 +74,7 @@ mod rt_impls {
 
 unsafe fn cvlr_new_account_info_rt<'a>(idx: usize) -> AccountInfo<'a> {
     use rt_decls::CVT_alloc_slice;
-
-    // copied here to avoid adding a dependency on solana_sdk
-    const NON_DUP_MARKER: u8 = u8::MAX;
+    use solana_program::entrypoint::NON_DUP_MARKER;
 
     let input = rt_decls::CVT_deserialize_global_account(idx)
         .unwrap()

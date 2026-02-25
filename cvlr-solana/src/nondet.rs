@@ -11,9 +11,8 @@ mod rt_decls {
 
 #[cfg(feature = "rt")]
 mod rt_impls {
+    use solana_account::Account;
     use solana_program::{account_info::AccountInfo, pubkey::Pubkey};
-    use solana_sdk::account::Account;
-    use std::boxed::Box;
 
     #[allow(improper_ctypes, improper_ctypes_definitions)]
     #[no_mangle]
