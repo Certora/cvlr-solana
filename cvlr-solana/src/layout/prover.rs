@@ -438,6 +438,23 @@ unsafe fn _cvlr_new_account_info_unchecked() -> AccountInfo<'static> {
     }
 }
 
-pub fn cvlr_deserialize_nondet_accounts<'a, const N: usize>() -> [AccountInfo<'a>; N] {
-    core::array::from_fn(|_| cvlr_new_account_info())
+pub fn cvlr_deserialize_nondet_accounts<'a>() -> [AccountInfo<'a>; 16] {
+    [
+        cvlr_new_account_info(),
+        cvlr_new_account_info(),
+        cvlr_new_account_info(),
+        cvlr_new_account_info(),
+        cvlr_new_account_info(),
+        cvlr_new_account_info(),
+        cvlr_new_account_info(),
+        cvlr_new_account_info(),
+        cvlr_new_account_info(),
+        cvlr_new_account_info(),
+        cvlr_new_account_info(),
+        cvlr_new_account_info(),
+        cvlr_new_account_info(),
+        cvlr_new_account_info(),
+        cvlr_new_account_info(),
+        cvlr_new_account_info(),
+    ]
 }

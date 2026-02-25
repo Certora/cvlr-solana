@@ -176,7 +176,7 @@ macro_rules! cvlr_solana_init {
 /// Certora Prover to use. This can be automatically injected in the analyzed
 /// code with the `cvlr_solana_init!` macro.
 pub fn make_invoke_mocks_available() {
-    let account_infos = cvlr_solana::cvlr_deserialize_nondet_accounts::<16>();
+    let account_infos = cvlr_solana::cvlr_deserialize_nondet_accounts();
     let mut account_info_iter = account_infos.iter();
     let acc1: &AccountInfo = next_account_info(&mut account_info_iter).unwrap();
     let acc2: &AccountInfo = next_account_info(&mut account_info_iter).unwrap();

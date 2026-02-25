@@ -169,6 +169,11 @@ unsafe fn cvlr_new_account_info_rt<'a>(idx: usize) -> AccountInfo<'a> {
     }
 }
 
-pub fn cvlr_deserialize_nondet_accounts<'a, const N: usize>() -> [AccountInfo<'a>; N] {
+pub fn cvlr_deserialize_nondet_accounts_n<'a, const N: usize>() -> [AccountInfo<'a>; N] {
     core::array::from_fn(cvlr_new_account_info)
+}
+
+/// here for API backwards-compatibility
+pub fn cvlr_deserialize_nondet_accounts<'a>() -> [AccountInfo<'a>; 16] {
+    cvlr_deserialize_nondet_accounts_n::<16>()
 }

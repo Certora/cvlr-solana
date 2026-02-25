@@ -14,5 +14,5 @@ pub use rt::global_database::{init, GlobalDatabase};
 #[cfg(feature = "rt")]
 pub use rt::{
     cvlr_deserialize_nondet_accounts, cvlr_deserialize_nondet_accounts as cvlr_nondet_acc_infos,
-    cvlr_new_account_info,
+    cvlr_deserialize_nondet_accounts_n, cvlr_new_account_info,
 };
