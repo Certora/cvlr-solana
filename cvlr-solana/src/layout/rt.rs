@@ -98,8 +98,12 @@ unsafe fn cvlr_new_account_info_rt<'a>(input: *mut u8) -> AccountInfo<'a> {
 
     let mut offset: usize = 0;
 
-    // we don't care about this marker.
-    offset += size_of_val(&NON_DUP_MARKER);
+    let dup_marker = *(input.add(offset) as *const u8);
+    if dup_marker == NON_DUP_MARKER {
+        offset += size_of_val(&dup_marker);
+    } else {
+        panic!("acccount detected as duplicate")
+    };
 
     let is_signer = *(input.add(offset) as *const u8) != 0;
     offset += size_of::<u8>();
