@@ -1,31 +1,23 @@
-use super::common::rt_decls;
-use super::instruction_accounts;
+use crate::layout::common::rt_decls;
+use crate::layout::common::sizes;
+use crate::layout::instruction_accounts::InstructionAccounts;
 use core::cell::RefCell;
-use core::ptr;
-use solana_account::Account;
 use solana_program::account_info::AccountInfo;
-use solana_program::entrypoint::{BPF_ALIGN_OF_U128, MAX_PERMITTED_DATA_INCREASE};
 use solana_program::pubkey::Pubkey;
 use std::rc::Rc;
 
 /// fetches the next unallocated account and reads it to [`AccountInfo`]
 pub fn cvlr_new_account_info<'a>() -> AccountInfo<'a> {
-    let mut global = instruction_accounts::InstructionAccounts::global()
-        .expect("global is init")
-        .try_lock()
-        .expect("running in single-threaded");
+    let mut global = InstructionAccounts::global().expect("global is init and no multithreading");
 
-    let account = global
-        .next_account()
+    let ptr = global
+        .next_ptr()
         .expect("next account has not been allocated yet");
-
-    let ptr = ptr::from_mut(account).cast::<u8>();
 
     unsafe { cvlr_new_account_info_rt(ptr) }
 }
 
 mod rt_impls {
-    use super::instruction_accounts::InstructionAccounts;
     use solana_program::entrypoint::BPF_ALIGN_OF_U128;
     use std::alloc::{alloc_zeroed, Layout};
 
@@ -51,21 +43,21 @@ unsafe fn cvlr_new_account_info_rt<'a>(input: *mut u8) -> AccountInfo<'a> {
 
     let dup_marker = *(input.add(offset) as *const u8);
     if dup_marker == NON_DUP_MARKER {
-        offset += size_of_val(&dup_marker);
+        offset += sizes::NON_DUP_MARKER;
     } else {
         panic!("acccount detected as duplicate")
     };
 
     let is_signer = *(input.add(offset) as *const u8) != 0;
-    offset += size_of::<u8>();
+    offset += sizes::IS_SIGNER;
 
     let is_writable = *(input.add(offset) as *const u8) != 0;
-    offset += size_of::<u8>();
+    offset += sizes::IS_WRITABLE;
 
     // ybd: for whatever reason, `executable` is here,
     // and not at the end like in entrypoint_deprecated
     let executable = *(input.add(offset) as *const u8) != 0;
-    offset += size_of::<u8>();
+    offset += sizes::EXECUTABLE;
 
     // this is where solana stores the "original length"
     // of the account data, aka the data len in the previous
@@ -77,33 +69,32 @@ unsafe fn cvlr_new_account_info_rt<'a>(input: *mut u8) -> AccountInfo<'a> {
     // to avoid holding a mutable pointer here we store just the offset
     // so we can write to it later.
     let original_data_len_offset = offset;
-    offset += size_of::<u32>();
+    offset += sizes::ORIGINAL_DATA_LEN;
 
     let key = {
-        let slice = CVT_alloc_slice(input, offset, size_of::<Pubkey>());
-        offset += size_of::<Pubkey>();
+        let slice = CVT_alloc_slice(input, offset, sizes::KEY);
+        offset += sizes::KEY;
         &*(slice as *const Pubkey)
     };
 
     let owner = {
-        let slice = CVT_alloc_slice(input, offset, size_of::<Pubkey>());
-        offset += size_of::<Pubkey>();
+        let slice = CVT_alloc_slice(input, offset, sizes::OWNER);
+        offset += sizes::OWNER;
         &*(slice as *const Pubkey)
     };
 
     // ybd: it is not clear to me how it's sound to
     // to deserialize Rc<RefCell<T>> as *mut u64,
     // other thah both types having the same size
-    let rc_refcell_size = size_of::<u64>();
-
     let lamports = {
-        let slice = CVT_alloc_slice(input, offset, rc_refcell_size);
-        offset += rc_refcell_size;
+        let slice = CVT_alloc_slice(input, offset, sizes::LAMPORTS);
+        offset += sizes::LAMPORTS;
         let lamports_ptr = &mut *(slice as *mut u64);
         Rc::new(RefCell::new(lamports_ptr))
     };
 
     let data_len = *(input.add(offset) as *const u64) as usize;
+    offset += sizes::DATA_LEN_FIELD;
 
     {
         let data_len_u32 = u32::try_from(data_len).expect("u32::MAX > max account data len");
@@ -117,14 +108,13 @@ unsafe fn cvlr_new_account_info_rt<'a>(input: *mut u8) -> AccountInfo<'a> {
     };
 
     // ybd:
-    // 1. rent_epoch was removed in solana-sdk commit 449d97c0ed
+    // rent_epoch was removed in solana-sdk commit 449d97c0ed
     // here we deserialize as of right before the changes from that commit
-    // 2. here we assume data increase is bounded, as define by solana abi
-    offset += data_len + MAX_PERMITTED_DATA_INCREASE;
-    offset += (offset as *const u8).align_offset(BPF_ALIGN_OF_U128);
+    offset += data_len + sizes::MAX_PERMITTED_DATA_INCREASE;
+    offset += sizes::padding(offset);
 
     let rent_epoch = *(input.add(offset) as *const u64);
-    offset += size_of::<u64>();
+    offset += sizes::RENT_EPOCH;
 
     // in the solana-sdk deserialization routine, this offset is returned
     _ = offset;
@@ -145,7 +135,7 @@ pub fn cvlr_deserialize_nondet_accounts_n<'a, const N: usize>() -> [AccountInfo<
     core::array::from_fn(|_| cvlr_new_account_info())
 }
 
-/// here for API backwards-compatibility
+/// for API backwards-compatibility
 pub fn cvlr_deserialize_nondet_accounts<'a>() -> [AccountInfo<'a>; 16] {
     cvlr_deserialize_nondet_accounts_n::<16>()
 }

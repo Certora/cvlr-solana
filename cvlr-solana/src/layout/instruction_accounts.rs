@@ -1,47 +1,332 @@
-use core::ptr;
-use solana_account::Account;
-use std::sync::{Mutex, OnceLock};
+use crate::layout::common::sizes;
+use core::iter::repeat_with;
+use solana_program::entrypoint;
+use solana_program::pubkey::Pubkey;
+use std::sync::OnceLock;
+use std::sync::{Mutex, MutexGuard};
+
+/// internal representation of account data,
+/// used only during build phase and then serialized
+/// to bytes as per Solana ABI.
+#[derive(Debug, Default)]
+struct AccountData {
+    is_signer: bool,
+    is_writable: bool,
+    executable: bool,
+    key: Pubkey,
+    owner: Pubkey,
+    lamports: u64,
+    data: Vec<u8>,
+    rent_epoch: u64,
+}
+
+impl AccountData {
+    pub fn parse(mut bytes: &[u8]) -> Vec<AccountData> {
+        core::iter::from_fn(|| {
+            let account;
+            (account, bytes) = AccountData::parse_next(bytes)?;
+            Some(account)
+        })
+        .collect()
+    }
+
+    fn parse_next(mut bytes: &[u8]) -> Option<(AccountData, &[u8])> {
+        let start = bytes.len();
+        match *bytes.first()? {
+            entrypoint::NON_DUP_MARKER => {
+                bytes = &bytes[sizes::NON_DUP_MARKER..];
+            }
+            marker => {
+                // might want to do something else here instead
+                panic!("duplicate account detected (non_dup marker = {marker:#x})");
+            }
+        }
+
+        let is_signer = *bytes.first()? != 0;
+        bytes = &bytes[sizes::IS_SIGNER..];
+
+        let is_writable = *bytes.first()? != 0;
+        bytes = &bytes[sizes::IS_WRITABLE..];
+
+        let executable = *bytes.first()? != 0;
+        bytes = &bytes[sizes::EXECUTABLE..];
+
+        bytes = &bytes[sizes::ORIGINAL_DATA_LEN..];
+
+        let key = {
+            let chunk = bytes.first_chunk()?;
+            Pubkey::from(*chunk)
+        };
+        bytes = &bytes[sizes::KEY..];
+
+        let owner = {
+            let chunk = bytes.first_chunk()?;
+            Pubkey::from(*chunk)
+        };
+        bytes = &bytes[sizes::OWNER..];
+
+        let lamports = {
+            let chunk = bytes.first_chunk()?;
+            u64::from_le_bytes(*chunk)
+        };
+        bytes = &bytes[sizes::LAMPORTS..];
+
+        let data = {
+            let chunk = bytes.first_chunk()?;
+            let data_len = usize::from_le_bytes(*chunk);
+            bytes = &bytes[sizes::DATA_LEN_FIELD..];
+            let data = bytes.get(..data_len)?.to_owned();
+            bytes = &bytes[data_len..];
+            data
+        };
+
+        bytes = &bytes[sizes::MAX_PERMITTED_DATA_INCREASE..];
+
+        // note the order of operands here, the array shrinks as we go further
+        let offset_from_start = start - bytes.len();
+        bytes = &bytes[sizes::padding(offset_from_start)..];
+
+        let rent_epoch = {
+            let chunk = bytes.first_chunk()?;
+            u64::from_le_bytes(*chunk)
+        };
+        bytes = &bytes[sizes::RENT_EPOCH..];
+
+        let account = AccountData {
+            is_signer,
+            is_writable,
+            executable,
+            key,
+            owner,
+            lamports,
+            data,
+            rent_epoch,
+        };
+
+        Some((account, bytes))
+    }
+
+    pub fn max_len(&self) -> usize {
+        let max_len_in_build_phase = sizes::NON_DUP_MARKER
+            + sizes::IS_SIGNER
+            + sizes::IS_WRITABLE
+            + sizes::EXECUTABLE
+            + sizes::ORIGINAL_DATA_LEN
+            + sizes::KEY
+            + sizes::OWNER
+            + sizes::LAMPORTS
+            + sizes::DATA_LEN_FIELD
+            + self.data.len() // note that element count = data_len, because size_of u8 = 1
+            + sizes::MAX_PERMITTED_DATA_INCREASE
+            + sizes::max_padding()
+            + sizes::RENT_EPOCH;
+
+        // we also allow data growth after build phase.
+        max_len_in_build_phase + sizes::MAX_PERMITTED_DATA_INCREASE
+    }
+
+    /// serialize into `buf` using the Solana account ABI layout
+    ///
+    /// note that the account is always serialized
+    /// as non-dup.
+    pub fn serialize(&self, buf: &mut Vec<u8>) {
+        let start = buf.len();
+
+        let current_data_len = self.data.len();
+        let original_data_len = u32::try_from(current_data_len).expect("data len fits in u32");
+
+        buf.push(entrypoint::NON_DUP_MARKER);
+        buf.push(self.is_signer.into());
+        buf.push(self.is_writable.into());
+        buf.push(self.executable.into());
+        buf.extend_from_slice(&original_data_len.to_le_bytes());
+        buf.extend_from_slice(self.key.as_ref());
+        buf.extend_from_slice(self.owner.as_ref());
+        buf.extend_from_slice(&self.lamports.to_le_bytes());
+        buf.extend_from_slice(&current_data_len.to_le_bytes());
+        buf.extend_from_slice(&self.data);
+
+        let padding = sizes::padding(buf.len() + sizes::MAX_PERMITTED_DATA_INCREASE - start);
+        buf.resize(buf.len() + sizes::MAX_PERMITTED_DATA_INCREASE + padding, 0);
+
+        buf.extend_from_slice(&self.rent_epoch.to_le_bytes());
+    }
+}
+
+/// setup phase: parses account data from user input and allows configuring
+/// individual accounts before they are serialized into [`InstructionAccounts`].
+pub struct InstructionAccountsBuilder {
+    accounts: Vec<AccountData>,
+    /// the number of accounts to allocate, defaults to all of them
+    remaining: usize,
+}
+
+impl InstructionAccountsBuilder {
+    /// initialize the builder by parsing an array of bytes
+    /// conforming to the Solana ABI
+    pub fn from_bytes(bytes: &[u8]) -> Self {
+        let accounts = AccountData::parse(bytes);
+        let remaining = accounts.len();
+
+        InstructionAccountsBuilder {
+            accounts,
+            remaining,
+        }
+    }
+
+    /// initialize the builder with zeroed account data,
+    /// where each account is considered unique (not a duplicate),
+    /// and key/owner are set to zero.
+    pub fn with_zeroed(count: usize) -> Self {
+        let accounts: Vec<_> = repeat_with(AccountData::default).take(count).collect();
+        let remaining = accounts.len();
+
+        InstructionAccountsBuilder {
+            accounts,
+            remaining,
+        }
+    }
+
+    /// initialize the builder with zeroed account data,
+    /// where each account is considered unique (not a duplicate),
+    /// and key/owner are unique.
+    pub fn with_zeroed_and_unique_pubkeys(count: usize) -> Self {
+        let accounts: Vec<_> = repeat_with(|| AccountData {
+            key: Pubkey::new_unique(),
+            owner: Pubkey::new_unique(),
+            ..Default::default()
+        })
+        .take(count)
+        .collect();
+        let remaining = accounts.len();
+
+        InstructionAccountsBuilder {
+            accounts,
+            remaining,
+        }
+    }
+
+    fn cursor(&self) -> usize {
+        self.accounts.len() - self.remaining
+    }
+
+    /// finish constructing current account and start constructing next
+    /// returns true if, after the cursor has been advanced, there are still
+    /// any accounts left
+    pub fn next(&mut self) -> bool {
+        self.remaining = self.remaining.saturating_sub(1);
+        self.remaining > 0
+    }
+
+    pub fn set_len(&mut self, new_len: usize) {
+        let len = self.accounts.len();
+
+        if new_len > len {
+            panic!("requested {new_len} accounts but only {len} were parsed from the input");
+        } else if new_len > self.remaining {
+            panic!("cannot set len to {new_len} since that would overwrite already-built accounts");
+        } else {
+            self.remaining = new_len
+        }
+    }
+
+    pub fn set_signer(&mut self, new_signer: bool) {
+        self.current_account_mut().is_signer = new_signer;
+    }
+
+    pub fn set_writable(&mut self, new_writable: bool) {
+        self.current_account_mut().is_writable = new_writable;
+    }
+
+    pub fn set_executable(&mut self, new_executable: bool) {
+        self.current_account_mut().executable = new_executable;
+    }
+
+    pub fn set_lamports(&mut self, new_lamports: u64) {
+        self.current_account_mut().lamports = new_lamports;
+    }
+
+    pub fn set_key(&mut self, new_key: &Pubkey) {
+        self.current_account_mut().key = *new_key;
+    }
+
+    pub fn set_owner(&mut self, new_owner: &Pubkey) {
+        self.current_account_mut().owner = *new_owner;
+    }
+
+    pub fn set_data(&mut self, new_data: &[u8]) {
+        let account = self.current_account_mut();
+
+        if new_data.len() > account.data.len() + sizes::MAX_PERMITTED_DATA_INCREASE {
+            panic!("new data len exceeds maximum permitted size increase");
+        } else {
+            account.data.clear();
+            account.data.extend_from_slice(new_data);
+        }
+    }
+
+    fn current_account_mut(&mut self) -> &mut AccountData {
+        let cursor = self.cursor();
+        self.accounts
+            .get_mut(cursor)
+            .unwrap_or_else(|| panic!("cursor is past the end of accounts"))
+    }
+}
 
 #[derive(Debug)]
 pub struct InstructionAccounts {
-    accounts: Vec<Account>,
-    next_idx: usize,
+    /// contiguous backing buffer for all serialized accounts.
+    /// pre-allocated to never reallocate, keeping raw pointers stable.
+    buf: Vec<u8>,
+    /// start offset within `buf` for each account
+    start_offsets: Vec<usize>,
+    allocated: usize,
 }
 
 static GLOBAL: OnceLock<Mutex<InstructionAccounts>> = OnceLock::new();
 
 impl InstructionAccounts {
-    // we assume this is single-threaded.
-    pub fn init_global(accounts: Vec<Account>) {
-        let database = InstructionAccounts {
-            accounts,
-            next_idx: 0,
-        };
-        let guard = Mutex::new(database);
+    pub fn init_from_builder(builder: InstructionAccountsBuilder) {
+        let buf_capacity = builder.accounts.iter().map(AccountData::max_len).sum();
+        let mut buf = Vec::with_capacity(buf_capacity);
 
-        // ybd: do we want to allow re-init?
-        GLOBAL.set(guard).expect("can only be set once");
-    }
+        let mut start_offsets = Vec::with_capacity(builder.accounts.len());
 
-    pub fn global<'a>() -> Option<&'a Mutex<InstructionAccounts>> {
-        GLOBAL.get()
-    }
-
-    pub fn next_account(&mut self) -> Option<&mut Account> {
-        let account = self.accounts.get_mut(self.next_idx)?;
-        self.next_idx += 1;
-        Some(account)
-    }
-
-    pub fn account(&self, idx: usize) -> Option<&Account> {
-        self.accounts.get(idx)
-    }
-
-    pub fn account_mut(&mut self, idx: usize) -> Option<&mut Account> {
-        if self.next_idx > idx {
-            panic!("can't get mutable reference to account after it has been allocated")
-        } else {
-            self.accounts.get_mut(idx)
+        for account in builder.accounts {
+            start_offsets.push(buf.len());
+            account.serialize(&mut buf);
         }
+
+        let accounts = InstructionAccounts {
+            buf,
+            start_offsets,
+            allocated: 0,
+        };
+
+        GLOBAL
+            .set(Mutex::new(accounts))
+            .expect("can only be initialized once");
+    }
+
+    pub fn global<'mtx>() -> Option<MutexGuard<'mtx, InstructionAccounts>> {
+        let global = GLOBAL.get()?;
+        global.try_lock().ok()
+    }
+
+    pub fn allocated(&self) -> usize {
+        self.allocated
+    }
+
+    pub(crate) fn next_ptr(&mut self) -> Option<*mut u8> {
+        let offset = *self.start_offsets.get(self.allocated)?;
+        self.allocated += 1;
+
+        // SAFETY: `offset` was recorded by `Account::serialize` and is within `buf`.
+        // `buf` was pre-allocated with enough capacity to never reallocate,
+        // so this pointer remains valid for the lifetime of `self`.
+        let ptr = unsafe { self.buf.as_mut_ptr().add(offset) };
+
+        Some(ptr)
     }
 }
+

@@ -1,8 +1,8 @@
-use super::common::rt_decls;
+use crate::layout::common::rt_decls;
+use crate::layout::common::sizes;
 use crate::nondet::cvlr_nondet_account_info;
 use core::cell::RefCell;
 use solana_program::account_info::AccountInfo;
-use solana_program::entrypoint::{BPF_ALIGN_OF_U128, MAX_PERMITTED_DATA_INCREASE};
 use solana_program::pubkey::Pubkey;
 use std::rc::Rc;
 
@@ -286,45 +286,55 @@ unsafe fn cvlr_new_account_info_unchecked<'a>() -> AccountInfo<'a> {
 
     const MB: usize = 1024 * 1024;
     const MAX_ORIG_DATA_LEN: usize = 8 * MB;
-    const SIZE: usize =
-        4 + 4 + 32 + 32 + 8 + 8 + MAX_ORIG_DATA_LEN + MAX_PERMITTED_DATA_INCREASE + 8;
+    const SIZE: usize = sizes::NON_DUP_MARKER
+        + sizes::IS_SIGNER
+        + sizes::IS_WRITABLE
+        + sizes::EXECUTABLE
+        + sizes::ORIGINAL_DATA_LEN
+        + sizes::KEY
+        + sizes::OWNER
+        + sizes::LAMPORTS
+        + sizes::DATA_LEN_FIELD
+        + MAX_ORIG_DATA_LEN
+        + sizes::MAX_PERMITTED_DATA_INCREASE
+        + sizes::RENT_EPOCH;
 
-    let layout = Layout::from_size_align_unchecked(SIZE, BPF_ALIGN_OF_U128);
+    let layout = Layout::from_size_align_unchecked(SIZE, sizes::BPF_ALIGN_OF_U128);
     let input: *mut u8 = rt_decls::CVT_nondet_solana_account_space(layout.size());
 
     let mut offset: usize = 0;
 
-    offset += size_of::<u8>();
+    offset += sizes::NON_DUP_MARKER;
 
     let is_signer = *(input.add(offset) as *const u8) != 0;
-    offset += size_of::<u8>();
+    offset += sizes::IS_SIGNER;
 
     let is_writable = *(input.add(offset) as *const u8) != 0;
-    offset += size_of::<u8>();
+    offset += sizes::IS_WRITABLE;
 
     let executable = *(input.add(offset) as *const u8) != 0;
-    offset += size_of::<u8>();
+    offset += sizes::EXECUTABLE;
 
     let len_with_key_ptr: *mut u8 =
-        CVT_alloc_slice(input, offset, size_of::<u32>() + size_of::<Pubkey>());
+        CVT_alloc_slice(input, offset, sizes::ORIGINAL_DATA_LEN + sizes::KEY);
 
     let original_data_len: u32 = *(len_with_key_ptr as *const u32);
-    offset += size_of::<u32>();
+    offset += sizes::ORIGINAL_DATA_LEN;
 
     // let key: &Pubkey = &*(input.add(offset) as *const Pubkey);
-    let key: &Pubkey = &*(len_with_key_ptr.add(size_of::<u32>()) as *const Pubkey);
-    offset += size_of::<Pubkey>();
+    let key: &Pubkey = &*(len_with_key_ptr.add(sizes::ORIGINAL_DATA_LEN) as *const Pubkey);
+    offset += sizes::KEY;
 
     // let owner: &Pubkey = &*(input.add(offset) as *const Pubkey);
-    let owner: &Pubkey = &*(CVT_alloc_slice(input, offset, size_of::<Pubkey>()) as *const Pubkey);
-    offset += size_of::<Pubkey>();
+    let owner: &Pubkey = &*(CVT_alloc_slice(input, offset, sizes::OWNER) as *const Pubkey);
+    offset += sizes::OWNER;
 
     // let lamports_ptr: &u64 = &mut *(input.add(offset) as *mut u64);
     let lamports_ptr: &mut u64 =
-        &mut *(CVT_alloc_slice(input, offset, size_of::<u64>()) as *mut u64);
+        &mut *(CVT_alloc_slice(input, offset, sizes::LAMPORTS) as *mut u64);
     cvlr_assume!(cvlr_mathint::is_u64(*lamports_ptr));
     let lamports = Rc::new(RefCell::new(lamports_ptr));
-    offset += size_of::<u64>();
+    offset += sizes::LAMPORTS;
 
     let data_len: usize = cvlr_nondet::nondet::<usize>();
     // -- limit size of data to what is allocated
@@ -335,23 +345,23 @@ unsafe fn cvlr_new_account_info_unchecked<'a>() -> AccountInfo<'a> {
     let len_with_data_ptr = CVT_alloc_slice(
         input,
         offset,
-        size_of::<u64>() + data_len + MAX_PERMITTED_DATA_INCREASE,
+        sizes::DATA_LEN_FIELD + data_len + sizes::MAX_PERMITTED_DATA_INCREASE,
     );
 
     cvlr_assume!(data_len == *(len_with_data_ptr as *const u64) as usize);
-    let data_ptr: *mut u8 = len_with_data_ptr.add(size_of::<u64>());
+    let data_ptr: *mut u8 = len_with_data_ptr.add(sizes::DATA_LEN_FIELD);
     let data = Rc::new(RefCell::new(std::slice::from_raw_parts_mut(
         data_ptr, data_len,
     )));
 
-    offset += data_len + MAX_PERMITTED_DATA_INCREASE;
-    offset += (offset as *const u8).align_offset(BPF_ALIGN_OF_U128);
+    offset += data_len + sizes::MAX_PERMITTED_DATA_INCREASE;
+    offset += sizes::padding(offset);
 
     // -- place rent_epoch at the end of the data segment
-    offset = SIZE - size_of::<u64>();
+    offset = SIZE - sizes::RENT_EPOCH;
     let rent_epoch = *(input.add(offset) as *const u64);
     cvlr_assume!(cvlr_mathint::is_u64(rent_epoch));
-    offset += size_of::<u64>();
+    offset += sizes::RENT_EPOCH;
 
     AccountInfo {
         key,
@@ -367,47 +377,53 @@ unsafe fn cvlr_new_account_info_unchecked<'a>() -> AccountInfo<'a> {
 
 #[allow(unused_assignments)]
 unsafe fn _cvlr_new_account_info_unchecked() -> AccountInfo<'static> {
-    use solana_program::{
-        entrypoint::{BPF_ALIGN_OF_U128, MAX_PERMITTED_DATA_INCREASE},
-        pubkey::Pubkey,
-    };
-    use std::{alloc::Layout, cell::RefCell, mem::size_of, rc::Rc};
+    use std::alloc::Layout;
 
     const MB: usize = 1024 * 1024;
     const MAX_ORIG_DATA_LEN: usize = 8 * MB;
-    const SIZE: usize =
-        4 + 4 + 32 + 32 + 8 + 8 + MAX_ORIG_DATA_LEN + MAX_PERMITTED_DATA_INCREASE + 8;
+    const SIZE: usize = sizes::NON_DUP_MARKER
+        + sizes::IS_SIGNER
+        + sizes::IS_WRITABLE
+        + sizes::EXECUTABLE
+        + sizes::ORIGINAL_DATA_LEN
+        + sizes::KEY
+        + sizes::OWNER
+        + sizes::LAMPORTS
+        + sizes::DATA_LEN_FIELD
+        + MAX_ORIG_DATA_LEN
+        + sizes::MAX_PERMITTED_DATA_INCREASE
+        + sizes::RENT_EPOCH;
 
-    let layout = Layout::from_size_align_unchecked(SIZE, BPF_ALIGN_OF_U128);
+    let layout = Layout::from_size_align_unchecked(SIZE, sizes::BPF_ALIGN_OF_U128);
     let input: *mut u8 = rt_decls::CVT_nondet_solana_account_space(layout.size());
 
     let mut offset: usize = 0;
 
-    offset += size_of::<u8>();
+    offset += sizes::NON_DUP_MARKER;
 
     let is_signer = *(input.add(offset) as *const u8) != 0;
-    offset += size_of::<u8>();
+    offset += sizes::IS_SIGNER;
 
     let is_writable = *(input.add(offset) as *const u8) != 0;
-    offset += size_of::<u8>();
+    offset += sizes::IS_WRITABLE;
 
     let executable = *(input.add(offset) as *const u8) != 0;
-    offset += size_of::<u8>();
+    offset += sizes::EXECUTABLE;
 
     let original_data_len_offset = offset;
-    offset += size_of::<u32>();
+    offset += sizes::ORIGINAL_DATA_LEN;
 
     let key: &Pubkey = &*(input.add(offset) as *const Pubkey);
-    offset += size_of::<Pubkey>();
+    offset += sizes::KEY;
 
     let owner: &Pubkey = &*(input.add(offset) as *const Pubkey);
-    offset += size_of::<Pubkey>();
+    offset += sizes::OWNER;
 
     let lamports = Rc::new(RefCell::new(&mut *(input.add(offset) as *mut u64)));
-    offset += size_of::<u64>();
+    offset += sizes::LAMPORTS;
 
     let data_len = *(input.add(offset) as *const u64) as usize;
-    offset += size_of::<u64>();
+    offset += sizes::DATA_LEN_FIELD;
 
     *(input.add(original_data_len_offset) as *mut u32) = data_len as u32;
 
@@ -419,12 +435,12 @@ unsafe fn _cvlr_new_account_info_unchecked() -> AccountInfo<'static> {
         data_len,
     )));
 
-    offset += data_len + MAX_PERMITTED_DATA_INCREASE;
-    offset += (offset as *const u8).align_offset(BPF_ALIGN_OF_U128);
+    offset += data_len + sizes::MAX_PERMITTED_DATA_INCREASE;
+    offset += sizes::padding(offset);
 
     // let rent_epoch = *(input.add(offset) as *const u64);
     let rent_epoch = cvlr_nondet::nondet::<u64>();
-    offset += size_of::<u64>();
+    offset += sizes::RENT_EPOCH;
 
     AccountInfo {
         key,
