@@ -12,24 +12,6 @@ pub fn cvlr_new_account_info<'a>() -> AccountInfo<'a> {
     unsafe { cvlr_new_account_info_rt(ptr) }
 }
 
-mod rt_impls {
-    use solana_program::entrypoint::BPF_ALIGN_OF_U128;
-    use std::alloc::{alloc_zeroed, Layout};
-
-    #[no_mangle]
-    extern "C" fn CVT_nondet_solana_account_space(size: usize) -> *mut u8 {
-        unsafe {
-            let layout = Layout::from_size_align_unchecked(size, BPF_ALIGN_OF_U128);
-            alloc_zeroed(layout)
-        }
-    }
-
-    #[no_mangle]
-    extern "C" fn CVT_alloc_slice(base: *mut u8, offset: usize, _size: usize) -> *mut u8 {
-        unsafe { base.add(offset) }
-    }
-}
-
 unsafe fn cvlr_new_account_info_rt<'a>(input: *mut u8) -> AccountInfo<'a> {
     use rt_decls::CVT_alloc_slice;
     use solana_program::entrypoint::NON_DUP_MARKER;
