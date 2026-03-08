@@ -23,6 +23,7 @@ pub mod sizes {
         ptr.align_offset(BPF_ALIGN_OF_U128)
     }
 
+    #[cfg(feature = "rt")]
     /// the "worst-case" amount of padding possible,
     /// which we use to ensure capacity
     pub const fn max_padding() -> usize {
