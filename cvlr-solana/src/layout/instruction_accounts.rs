@@ -330,7 +330,7 @@ impl InstructionAccounts {
         with_global_borrow(|accounts| accounts.allocated)
     }
 
-    fn next_ptr_inner(&mut self) -> Option<*mut u8> {
+    fn next_ptr_impl(&mut self) -> Option<*mut u8> {
         let offset = *self.start_offsets.get(self.allocated)?;
         self.allocated += 1;
 
@@ -343,6 +343,6 @@ impl InstructionAccounts {
     }
 
     pub(crate) fn next_ptr() -> Option<*mut u8> {
-        with_global_borrow_mut(InstructionAccounts::next_ptr_inner)
+        with_global_borrow_mut(InstructionAccounts::next_ptr_impl)
     }
 }
