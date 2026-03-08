@@ -2,8 +2,7 @@ use crate::layout::common::sizes;
 use core::iter::repeat_with;
 use solana_program::entrypoint;
 use solana_program::pubkey::Pubkey;
-use std::sync::OnceLock;
-use std::sync::{Mutex, MutexGuard};
+use std::cell::RefCell;
 
 /// internal representation of account data,
 /// used only during build phase and then serialized
@@ -283,7 +282,25 @@ pub struct InstructionAccounts {
     allocated: usize,
 }
 
-static GLOBAL: OnceLock<Mutex<InstructionAccounts>> = OnceLock::new();
+thread_local! {
+    static GLOBAL: RefCell<Option<InstructionAccounts>> = const { RefCell::new(None) };
+}
+
+/// convenience function to reduce boilerplate, probably overkill
+fn with_global_borrow<R, F: FnOnce(&InstructionAccounts) -> R>(f: F) -> R {
+    GLOBAL.with_borrow(|global| {
+        let global = global.as_ref().expect("global is initialized");
+        f(global)
+    })
+}
+
+/// convenience function to reduce boilerplate, probably overkill
+fn with_global_borrow_mut<R, F: FnOnce(&mut InstructionAccounts) -> R>(f: F) -> R {
+    GLOBAL.with_borrow_mut(|global| {
+        let global = global.as_mut().expect("global is initialized");
+        f(global)
+    })
+}
 
 impl InstructionAccounts {
     pub fn init_from_builder(builder: InstructionAccountsBuilder) {
@@ -303,21 +320,17 @@ impl InstructionAccounts {
             allocated: 0,
         };
 
-        GLOBAL
-            .set(Mutex::new(accounts))
-            .expect("can only be initialized once");
+        GLOBAL.with_borrow_mut(|global| {
+            let old = global.replace(accounts);
+            assert!(old.is_none(), "can only be initialized once");
+        });
     }
 
-    pub fn global<'mtx>() -> Option<MutexGuard<'mtx, InstructionAccounts>> {
-        let global = GLOBAL.get()?;
-        global.try_lock().ok()
+    pub fn allocated() -> usize {
+        with_global_borrow(|accounts| accounts.allocated)
     }
 
-    pub fn allocated(&self) -> usize {
-        self.allocated
-    }
-
-    pub(crate) fn next_ptr(&mut self) -> Option<*mut u8> {
+    fn next_ptr_inner(&mut self) -> Option<*mut u8> {
         let offset = *self.start_offsets.get(self.allocated)?;
         self.allocated += 1;
 
@@ -328,5 +341,8 @@ impl InstructionAccounts {
 
         Some(ptr)
     }
-}
 
+    pub(crate) fn next_ptr() -> Option<*mut u8> {
+        with_global_borrow_mut(InstructionAccounts::next_ptr_inner)
+    }
+}

@@ -8,12 +8,7 @@ use std::rc::Rc;
 
 /// fetches the next unallocated account and reads it to [`AccountInfo`]
 pub fn cvlr_new_account_info<'a>() -> AccountInfo<'a> {
-    let mut global = InstructionAccounts::global().expect("global is init and no multithreading");
-
-    let ptr = global
-        .next_ptr()
-        .expect("next account has not been allocated yet");
-
+    let ptr = InstructionAccounts::next_ptr().expect("next account has not been allocated yet");
     unsafe { cvlr_new_account_info_rt(ptr) }
 }
 
