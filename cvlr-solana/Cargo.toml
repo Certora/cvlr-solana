@@ -29,9 +29,7 @@ rt = ["cvlr-nondet/rt", "cvlr-asserts/rt", "cvlr-mathint/rt"]
 
 [dependencies]
 solana-program = { workspace =  true }
-solana-account = { workspace =  true }
 arrayref = { workspace = true }
-
 cvlr-asserts = { workspace = true }
 cvlr-nondet = { workspace = true }
 cvlr-mathint = { workspace = true }

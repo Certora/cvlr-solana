@@ -35,9 +35,11 @@ impl AccountData {
             entrypoint::NON_DUP_MARKER => {
                 bytes = &bytes[sizes::NON_DUP_MARKER..];
             }
-            marker => {
-                // might want to do something else here instead
-                panic!("duplicate account detected (non_dup marker = {marker:#x})");
+            duped_from => {
+                // duplicate account detected:
+                // the byte is the index of the account that has appeared prior.
+                // (might want to do something else here instead)
+                panic!("detected dupe of account with index {duped_from}");
             }
         }
 
@@ -106,6 +108,10 @@ impl AccountData {
     }
 
     pub fn max_len(&self) -> usize {
+        /// the "worst-case" amount of padding possible,
+        /// which we use to ensure capacity
+        let max_padding = sizes::BPF_ALIGN_OF_U128 - 1;
+
         let max_len_in_build_phase = sizes::NON_DUP_MARKER
             + sizes::IS_SIGNER
             + sizes::IS_WRITABLE
@@ -117,7 +123,7 @@ impl AccountData {
             + sizes::DATA_LEN_FIELD
             + self.data.len() // note that element count = data_len, because size_of u8 = 1
             + sizes::MAX_PERMITTED_DATA_INCREASE
-            + sizes::max_padding()
+            + max_padding
             + sizes::RENT_EPOCH;
 
         // we also allow data growth after build phase.

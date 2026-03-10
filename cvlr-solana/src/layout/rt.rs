@@ -1,8 +1,8 @@
-use crate::layout::common::rt_decls;
 use crate::layout::common::sizes;
 use crate::layout::instruction_accounts::InstructionAccounts;
 use core::cell::RefCell;
 use solana_program::account_info::AccountInfo;
+use solana_program::entrypoint;
 use solana_program::pubkey::Pubkey;
 use std::rc::Rc;
 
@@ -13,16 +13,16 @@ pub fn cvlr_new_account_info<'a>() -> AccountInfo<'a> {
 }
 
 unsafe fn cvlr_new_account_info_rt<'a>(input: *mut u8) -> AccountInfo<'a> {
-    use rt_decls::CVT_alloc_slice;
-    use solana_program::entrypoint::NON_DUP_MARKER;
-
     let mut offset: usize = 0;
 
-    let dup_marker = *(input.add(offset) as *const u8);
-    if dup_marker == NON_DUP_MARKER {
-        offset += sizes::NON_DUP_MARKER;
-    } else {
-        panic!("acccount detected as duplicate")
+    match *(input.add(offset) as *const u8) {
+        entrypoint::NON_DUP_MARKER => {
+            offset += sizes::NON_DUP_MARKER;
+        }
+        _ => {
+            // TODO: "probably not hard to support. ok to not have now"
+            panic!("acccount detected as duplicate")
+        }
     };
 
     let is_signer = *(input.add(offset) as *const u8) != 0;
@@ -48,23 +48,14 @@ unsafe fn cvlr_new_account_info_rt<'a>(input: *mut u8) -> AccountInfo<'a> {
     let original_data_len_offset = offset;
     offset += sizes::ORIGINAL_DATA_LEN;
 
-    let key = {
-        let slice = CVT_alloc_slice(input, offset, sizes::KEY);
-        offset += sizes::KEY;
-        &*(slice as *const Pubkey)
-    };
+    let key = &*(input.add(offset) as *const Pubkey);
+    offset += sizes::KEY;
 
-    let owner = {
-        let slice = CVT_alloc_slice(input, offset, sizes::OWNER);
-        offset += sizes::OWNER;
-        &*(slice as *const Pubkey)
-    };
+    let owner = &*(input.add(offset) as *const Pubkey);
+    offset += sizes::OWNER;
 
-    // ybd: it is not clear to me how it's sound to
-    // to deserialize Rc<RefCell<T>> as *mut u64,
-    // other thah both types having the same size
     let lamports = {
-        let slice = CVT_alloc_slice(input, offset, sizes::LAMPORTS);
+        let slice = { unsafe { input.add(offset) } };
         offset += sizes::LAMPORTS;
         let lamports_ptr = &mut *(slice as *mut u64);
         Rc::new(RefCell::new(lamports_ptr))
@@ -79,8 +70,7 @@ unsafe fn cvlr_new_account_info_rt<'a>(input: *mut u8) -> AccountInfo<'a> {
     }
 
     let data = {
-        let slice = CVT_alloc_slice(input, offset, data_len);
-        let slice = core::slice::from_raw_parts_mut(slice, data_len);
+        let slice = core::slice::from_raw_parts_mut(input.add(offset), data_len);
         Rc::new(RefCell::new(slice))
     };
 
