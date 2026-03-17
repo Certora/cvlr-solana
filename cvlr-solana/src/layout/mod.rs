@@ -6,8 +6,6 @@ mod prover;
 #[cfg(feature = "rt")]
 mod rt;
 
-#[cfg(feature = "rt")]
-pub use instruction_accounts::{InstructionAccounts, InstructionAccountsBuilder};
 #[cfg(not(feature = "rt"))]
 pub use prover::{
     cvlr_deserialize_nondet_accounts, cvlr_new_account_info, fun_acc_infos_with_mem_layout,
@@ -15,6 +13,7 @@ pub use prover::{
 #[cfg(feature = "rt")]
 pub use rt::{
     cvlr_deserialize_nondet_accounts, cvlr_deserialize_nondet_accounts_n, cvlr_new_account_info,
+    InstructionAccounts, InstructionAccountsBuilder,
 };
 
 /// for API backwards-compatibility

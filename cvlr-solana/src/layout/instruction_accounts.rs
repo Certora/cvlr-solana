@@ -8,16 +8,22 @@ use std::cell::RefCell;
 /// used only during build phase and then serialized
 /// to bytes as per Solana ABI.
 #[derive(Debug, Default)]
-struct AccountData {
-    is_signer: bool,
-    is_writable: bool,
-    executable: bool,
-    key: Pubkey,
-    owner: Pubkey,
-    lamports: u64,
-    data: Vec<u8>,
-    rent_epoch: u64,
+pub(crate) struct AccountData {
+    pub meta: AccountMeta,
+    pub executable: bool,
+    pub owner: Pubkey,
+    pub lamports: u64,
+    pub data: Vec<u8>,
+    pub rent_epoch: u64,
 }
+
+#[derive(Debug, Default)]
+pub(crate) struct AccountMeta {
+    pub key: Pubkey,
+    pub is_signer: bool,
+    pub is_writable: bool,
+}
+
 
 impl AccountData {
     pub fn parse(mut bytes: &[u8]) -> Vec<AccountData> {
@@ -92,12 +98,14 @@ impl AccountData {
             u64::from_le_bytes(*chunk)
         };
         bytes = &bytes[sizes::RENT_EPOCH..];
-
-        let account = AccountData {
+        let meta = AccountMeta {
+            key,
             is_signer,
             is_writable,
+        };
+        let account = AccountData {
+            meta,
             executable,
-            key,
             owner,
             lamports,
             data,
@@ -141,11 +149,11 @@ impl AccountData {
         let original_data_len = u32::try_from(current_data_len).expect("data len fits in u32");
 
         buf.push(entrypoint::NON_DUP_MARKER);
-        buf.push(self.is_signer.into());
-        buf.push(self.is_writable.into());
+        buf.push(self.meta.is_signer.into());
+        buf.push(self.meta.is_writable.into());
         buf.push(self.executable.into());
         buf.extend_from_slice(&original_data_len.to_le_bytes());
-        buf.extend_from_slice(self.key.as_ref());
+        buf.extend_from_slice(self.meta.key.as_ref());
         buf.extend_from_slice(self.owner.as_ref());
         buf.extend_from_slice(&self.lamports.to_le_bytes());
         buf.extend_from_slice(&current_data_len.to_le_bytes());
@@ -197,7 +205,10 @@ impl InstructionAccountsBuilder {
     /// and key/owner are unique.
     pub fn with_zeroed_and_unique_pubkeys(count: usize) -> Self {
         let accounts: Vec<_> = repeat_with(|| AccountData {
-            key: Pubkey::new_unique(),
+            meta: AccountMeta {
+                key: Pubkey::new_unique(),
+                ..Default::default()
+            },
             owner: Pubkey::new_unique(),
             ..Default::default()
         })
@@ -236,11 +247,11 @@ impl InstructionAccountsBuilder {
     }
 
     pub fn set_signer(&mut self, new_signer: bool) {
-        self.current_account_mut().is_signer = new_signer;
+        self.current_account_mut().meta.is_signer = new_signer;
     }
 
     pub fn set_writable(&mut self, new_writable: bool) {
-        self.current_account_mut().is_writable = new_writable;
+        self.current_account_mut().meta.is_writable = new_writable;
     }
 
     pub fn set_executable(&mut self, new_executable: bool) {
@@ -252,7 +263,7 @@ impl InstructionAccountsBuilder {
     }
 
     pub fn set_key(&mut self, new_key: &Pubkey) {
-        self.current_account_mut().key = *new_key;
+        self.current_account_mut().meta.key = *new_key;
     }
 
     pub fn set_owner(&mut self, new_owner: &Pubkey) {
@@ -328,7 +339,7 @@ impl InstructionAccounts {
 
         GLOBAL.with_borrow_mut(|global| {
             let old = global.replace(accounts);
-            assert!(old.is_none(), "can only be initialized once");
+            assert!(old.is_none() || cfg!(test), "can only be initialized once");
         });
     }
 

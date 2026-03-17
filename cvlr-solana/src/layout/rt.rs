@@ -1,10 +1,18 @@
 use crate::layout::common::sizes;
-use crate::layout::instruction_accounts::InstructionAccounts;
 use core::cell::RefCell;
 use solana_program::account_info::AccountInfo;
 use solana_program::entrypoint;
 use solana_program::pubkey::Pubkey;
 use std::rc::Rc;
+
+#[path = "instruction_accounts.rs"]
+mod instruction_accounts;
+
+pub use instruction_accounts::{InstructionAccounts, InstructionAccountsBuilder};
+
+#[cfg(all(test, feature = "deserialize_test"))]
+#[path = "rt_tests/mod.rs"]
+mod tests;
 
 /// fetches the next unallocated account and reads it to [`AccountInfo`]
 pub fn cvlr_new_account_info<'a>() -> AccountInfo<'a> {
