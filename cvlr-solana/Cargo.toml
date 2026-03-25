@@ -26,11 +26,21 @@ pre-release-replacements = [
 [features]
 default = []
 rt = ["cvlr-nondet/rt", "cvlr-asserts/rt", "cvlr-mathint/rt"]
+deserialize_test = ["rt"]
+
+[dev-dependencies]
+rstest = "0.25"
+ureq = { version = "2", features = ["json"] }
+serde = "1"
+serde_json = "1"
+base64 = "0.22"
+litesvm = "0.6"
+solana-sdk = "2.2"
+spl-token = "7.0.0"
 
 [dependencies]
 solana-program = { workspace =  true }
 arrayref = { workspace = true }
-
 cvlr-asserts = { workspace = true }
 cvlr-nondet = { workspace = true }
 cvlr-mathint = { workspace = true }
