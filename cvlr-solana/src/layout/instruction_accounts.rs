@@ -24,7 +24,6 @@ pub(crate) struct AccountMeta {
     pub is_writable: bool,
 }
 
-
 impl AccountData {
     pub fn parse(mut bytes: &[u8]) -> Vec<AccountData> {
         core::iter::from_fn(|| {
@@ -341,6 +340,11 @@ impl InstructionAccounts {
             let old = global.replace(accounts);
             assert!(old.is_none() || cfg!(test), "can only be initialized once");
         });
+    }
+
+    pub fn init_from_bytes(bytes: &[u8]) {
+        let builder = InstructionAccountsBuilder::from_bytes(bytes);
+        InstructionAccounts::init_from_builder(builder);
     }
 
     pub fn allocated() -> usize {
