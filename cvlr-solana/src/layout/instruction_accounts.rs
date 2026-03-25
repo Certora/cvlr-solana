@@ -269,6 +269,15 @@ impl InstructionAccountsBuilder {
         self.current_account_mut().owner = *new_owner;
     }
 
+    pub fn to_bytes(self) -> Vec<u8> {
+        let cap = self.accounts.iter().map(AccountData::max_len).sum();
+        let mut buf = Vec::with_capacity(cap);
+        for account in self.accounts {
+            account.serialize(&mut buf);
+        }
+        buf
+    }
+
     pub fn set_data(&mut self, new_data: &[u8]) {
         let account = self.current_account_mut();
 
