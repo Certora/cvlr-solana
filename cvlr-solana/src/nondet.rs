@@ -1,7 +1,8 @@
-use solana_program::{account_info::AccountInfo, program_option::COption, pubkey::Pubkey};
+use {solana_account_info::AccountInfo, solana_program_option::COption, solana_pubkey::Pubkey};
 
 mod rt_decls {
-    use solana_program::{account_info::AccountInfo, pubkey::Pubkey};
+    use solana_account_info::AccountInfo;
+    use solana_pubkey::Pubkey;
     #[allow(improper_ctypes)]
     extern "C" {
         pub fn CVT_nondet_account_info() -> AccountInfo<'static>;
@@ -11,8 +12,9 @@ mod rt_decls {
 
 #[cfg(feature = "rt")]
 mod rt_impls {
-    use solana_program::{account_info::AccountInfo, pubkey::Pubkey};
-    use solana_sdk::account::Account;
+    use solana_account::Account;
+    use solana_account_info::AccountInfo;
+    use solana_pubkey::Pubkey;
     use std::boxed::Box;
 
     #[allow(improper_ctypes, improper_ctypes_definitions)]

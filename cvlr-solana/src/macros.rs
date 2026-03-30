@@ -46,13 +46,13 @@ macro_rules! require_keys_neq {
 
 // We redefine invoke and invoke_signed to avoid the signer checks
 // TODO: we might want to move these macros to mocks
-/// Program-side replacement for `solana_program::program::invoke`.
+/// Program-side replacement for `solana_cpi::invoke`.
 ///
 /// `invoke!(instruction, account_infos)` expands to
-/// `solana_program::program::invoke_signed_unchecked(instruction, account_infos, &[])`,
+/// `solana_cpi::invoke_signed_unchecked(instruction, account_infos, &[])`,
 /// which skips the runtime's signer and privilege checks. Use it in the code
 /// under verification (typically behind the verification feature) in place of
-/// `invoke(...)`; the calling crate must depend on `solana_program`.
+/// `invoke(...)`.
 ///
 /// **This macro does not model the called program.** The standard Prover
 /// summaries (`cvlr_summaries_core.txt` in Certora's Solana template) treat
@@ -66,20 +66,20 @@ macro_rules! require_keys_neq {
 #[macro_export]
 macro_rules! invoke {
     ($instruction: expr, $acc_infos: expr $(,)*) => {{
-        solana_program::program::invoke_signed_unchecked($instruction, $acc_infos, &[])
+        $crate::__solana_cpi::invoke_signed_unchecked($instruction, $acc_infos, &[])
     }};
 }
 
-/// Program-side replacement for `solana_program::program::invoke_signed`.
+/// Program-side replacement for `solana_cpi::invoke_signed`.
 ///
 /// `invoke_signed!(instruction, account_infos, signer_seeds)` expands to
-/// `solana_program::program::invoke_signed_unchecked(instruction, account_infos, signer_seeds)`.
+/// `solana_cpi::invoke_signed_unchecked(instruction, account_infos, signer_seeds)`.
 /// As with [`invoke!`](crate::invoke), the called program is **not modeled**:
 /// the call returns an arbitrary result and changes no account under the
 /// standard summaries, and the Prover's CPI substitution does not apply.
 #[macro_export]
 macro_rules! invoke_signed {
     ($instruction: expr, $acc_infos: expr, $seeds: expr $(,)*) => {{
-        solana_program::program::invoke_signed_unchecked($instruction, $acc_infos, $seeds)
+        $crate::__solana_cpi::invoke_signed_unchecked($instruction, $acc_infos, $seeds)
     }};
 }
