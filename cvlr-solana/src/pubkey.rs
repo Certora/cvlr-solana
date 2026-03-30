@@ -1,5 +1,5 @@
 use cvlr_log::cvlr_log_with;
-use solana_program::pubkey::Pubkey;
+use solana_pubkey::Pubkey;
 use std::ops::Deref;
 
 /// A lightweight wrapper around a borrowed [`Pubkey`] that provides

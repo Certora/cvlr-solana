@@ -1,9 +1,8 @@
 /// Summaries for Token and Token-2022
 ///
 use arrayref::{array_mut_ref, array_ref, array_refs, mut_array_refs};
-use solana_program::{
-    account_info::AccountInfo, entrypoint::ProgramResult, program_error::ProgramError,
-};
+use solana_account_info::AccountInfo;
+use solana_program_error::{ProgramResult, ProgramError};
 
 use cvlr_asserts::cvlr_assume;
 use cvlr_mathint::NativeInt as MathInt;

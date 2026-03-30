@@ -1,5 +1,5 @@
 use cvlr_log::clog;
-use solana_program::account_info::AccountInfo;
+use solana_account_info::AccountInfo;
 
 #[macro_export]
 macro_rules! clog_acc_info {
