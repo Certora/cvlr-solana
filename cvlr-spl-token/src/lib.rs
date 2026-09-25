@@ -3,12 +3,17 @@
 //! This module provides a wrapper around SPL Token that selectively overrides
 //! specific instruction functions with custom implementations while maintaining
 //! full backward compatibility with the standard SPL Token API.
+//!
+//! The crate re-exports all of `spl_token` (currently without changes) and
+//! the token helpers of `cvlr_solana::token`, and adds [`cpis`]: the
+//! functions the Certora Prover substitutes for CPIs to the SPL Token and
+//! Token-2022 programs. To use the mocks, depend on this crate from the
+//! program under verification and invoke [`cvlr_solana_init!`] once in it; see
+//! [`cpis`] for how the substitution works and what the mocks model.
 
 // Expose token utilities from cvlr-solana if additional mocking is needed.
 pub use cvlr_solana::token::*;
 
-// Contains our custom Cross-Program Invocation (CPI) implementations.
-// These are the actual custom logic for overridden SPL Token functions.
 pub mod cpis;
 
 // Private base module that re-exports all SPL Token functionality.
@@ -22,6 +27,7 @@ mod base {
 // This module provides the public API and selectively exposes our custom
 // implementations instead of the original SPL Token versions for certain
 // operations.
+/// `spl_token::instruction`, re-exported unchanged.
 pub mod instruction {
     // Re-export everything from `spl_token::instruction`.
     pub use spl_token::instruction::*;

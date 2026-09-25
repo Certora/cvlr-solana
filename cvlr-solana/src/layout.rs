@@ -58,6 +58,11 @@ macro_rules! mem_layout_owner {
 /// The function `fun_acc_infos_with_mem_layout` returns 16 AccountInfo
 /// initialized non-deterministically.
 ///
+/// This is the older way of creating accounts, built on
+/// [`cvlr_nondet_account_info`](crate::cvlr_nondet_account_info); prefer
+/// [`cvlr_deserialize_nondet_accounts`], which the current Prover models
+/// directly.
+///
 /// While the contents of the accounts are unconstrained, this function
 /// assigns fixed addresses to any field that contains a pointer or
 /// reference: `key`, `lamports`, `data`, and `owner`.
@@ -262,6 +267,12 @@ pub fn fun_acc_infos_with_mem_layout() -> [AccountInfo<'static>; 16] {
     ]
 }
 
+/// The same as
+/// [`cvlr_deserialize_nondet_accounts()`](crate::cvlr_deserialize_nondet_accounts).
+///
+/// Despite its name, this macro does not use
+/// [`fun_acc_infos_with_mem_layout`](crate::fun_acc_infos_with_mem_layout); it
+/// is kept for existing specs.
 #[macro_export]
 macro_rules! acc_infos_with_mem_layout {
     () => {
@@ -269,6 +280,27 @@ macro_rules! acc_infos_with_mem_layout {
     };
 }
 
+/// Returns one `AccountInfo` with arbitrary contents, laid out as the Solana
+/// runtime lays out program inputs.
+///
+/// Each call reserves a fresh, fixed memory region for the account (the Prover
+/// gives every call its own 10 MiB range in the SVM input region), so the
+/// `key`, `owner`, `lamports` and `data` of different accounts never share
+/// memory. Their *values* are unconstrained:
+///
+/// * `key` and `owner` are arbitrary. In particular, two accounts may have the
+///   same key; assume `a.key != b.key` where the program relies on distinct
+///   accounts.
+/// * `is_signer`, `is_writable` and `executable` are arbitrary.
+/// * `lamports` and `rent_epoch` are arbitrary `u64`s.
+/// * `data` has an arbitrary length of at most 8 MiB and arbitrary contents,
+///   with room after it for the runtime's permitted realloc increase
+///   (`MAX_PERMITTED_DATA_INCREASE`); the recorded original data length equals
+///   the length.
+///
+/// Constrain the account with `cvlr_assume!` (e.g. on its owner, data length
+/// or deserialized contents) to match what the program expects. Usually called
+/// through [`cvlr_deserialize_nondet_accounts`].
 pub fn cvlr_new_account_info<'a>() -> AccountInfo<'a> {
     unsafe { cvlr_new_account_info_unchecked() }
 }
@@ -463,6 +495,27 @@ unsafe fn _cvlr_new_account_info_unchecked() -> AccountInfo<'static> {
     }
 }
 
+/// Returns 16 arbitrary accounts: the standard input of a Solana rule.
+///
+/// Each element is a separate [`cvlr_new_account_info`], so the accounts
+/// occupy disjoint memory but their keys, owners, flags, balances and data are
+/// unconstrained and independent; in particular keys may coincide. Pass the
+/// array (as a slice) to the program's processor or instruction handler, and
+/// assume whatever relationships between accounts the scenario requires:
+///
+/// ```ignore
+/// #[rule]
+/// fn rule_withdraw() {
+///     let accounts = cvlr_deserialize_nondet_accounts();
+///     let (vault, user) = (&accounts[0], &accounts[1]);
+///     cvlr_assume!(vault.key != user.key);
+///     let amount: u64 = nondet();
+///     process_withdraw(&program_id(), &accounts, amount).unwrap();
+///     // assertions over vault / user
+/// }
+/// ```
+///
+/// Also exported as `cvlr_nondet_acc_infos`.
 pub fn cvlr_deserialize_nondet_accounts<'a>() -> [AccountInfo<'a>; 16] {
     [
         cvlr_new_account_info(),
