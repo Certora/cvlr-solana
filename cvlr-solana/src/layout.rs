@@ -321,8 +321,7 @@ mod rt_impls {
     extern "C" fn CVT_nondet_solana_account_space(size: usize) -> *mut u8 {
         unsafe {
             let layout = Layout::from_size_align_unchecked(size, BPF_ALIGN_OF_U128);
-            let input = alloc_zeroed(layout);
-            input
+            alloc_zeroed(layout)
         }
     }
     #[no_mangle]

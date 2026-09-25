@@ -19,7 +19,7 @@ mod rt_impls {
     #[no_mangle]
     extern "C" fn CVT_nondet_account_info() -> AccountInfo<'static> {
         let owner: &'static mut _ = Box::leak(Box::new(Pubkey::new_unique()));
-        let acc = Account::new(1, 2, &owner);
+        let acc = Account::new(1, 2, owner);
         let pk: &'static mut _ = Box::leak(Box::new(Pubkey::new_unique()));
         let v: &'static mut _ = Box::leak(Box::new((*pk, acc)));
         v.into()
