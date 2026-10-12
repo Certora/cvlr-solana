@@ -1,4 +1,7 @@
 //! Instructions
+//!
+//! Models of the Stake program's instructions; see the [crate] documentation
+//! for what the model leaves out.
 
 use std::io::Write;
 
@@ -21,6 +24,25 @@ use crate::state::{
     empty_stake_flags, nondet_stake, stake_from_account_info_unchecked, stake_to_slice_unchecked,
 };
 
+/// Model of `Withdraw`: moves `withdraw_lamports` from a stake account.
+///
+/// Accounts, in order: stake account, recipient, `Clock` sysvar, stake
+/// history (unused), withdraw authority (unused). The reserve that must stay
+/// in the stake account is:
+///
+/// * for `Stake`: the rent-exempt reserve plus the delegated stake, or, once
+///   the clock's epoch has reached the deactivation epoch, plus an arbitrary
+///   amount no greater than the delegated stake (the stake still cooling
+///   down);
+/// * for `Initialized`: the rent-exempt reserve;
+/// * for `Uninitialized`: zero. Any other state panics.
+///
+/// Withdrawing the entire balance panics if any stake is still active, and
+/// otherwise marks the account `Uninitialized` (its data must be exactly
+/// `StakeStateV2::size_of()` bytes). A partial withdrawal panics if it would
+/// leave less than the reserve. The lamports are then moved with
+/// [`relocate_lamports`]. Lockups and the withdraw authority are not
+/// checked.
 #[cvlr_early_panic::early_panic]
 pub fn process_withdraw(accounts: &[AccountInfo], withdraw_lamports: u64) -> ProgramResult {
     let account_info_iter = &mut accounts.iter();
@@ -101,6 +123,12 @@ pub fn process_withdraw(accounts: &[AccountInfo], withdraw_lamports: u64) -> Pro
     Ok(())
 }
 
+/// Model of `Deactivate`: starts deactivating a delegated stake.
+///
+/// Accounts, in order: stake account, `Clock` sysvar. The stake account must
+/// be in the `Stake` state and not already deactivating (otherwise the model
+/// panics); its deactivation epoch is set to the clock's epoch. The stake
+/// authority is not checked.
 #[cvlr_early_panic::early_panic]
 pub fn process_deactivate(accounts: &[AccountInfo]) -> ProgramResult {
     let account_info_iter = &mut accounts.iter();
@@ -129,6 +157,13 @@ pub fn process_deactivate(accounts: &[AccountInfo]) -> ProgramResult {
     Ok(())
 }
 
+/// Model of `Authorize`: replaces the staker or withdrawer authority.
+///
+/// Accounts, in order: stake account, `Clock` sysvar, current authority
+/// (unused). For an `Initialized` or `Stake` account, sets
+/// `meta.authorized.staker` or `meta.authorized.withdrawer` (by
+/// `authority_type`) to `new_authority`; any other state panics. No signer,
+/// current-authority or lockup check is made: the update always happens.
 #[cvlr_early_panic::early_panic]
 pub fn process_authorize(
     accounts: &[AccountInfo],
@@ -163,6 +198,25 @@ pub fn process_authorize(
     Ok(())
 }
 
+/// Model of `DelegateStake`: delegates a stake account to a vote account.
+///
+/// Accounts, in order: stake account, vote account, `Clock` sysvar, stake
+/// history (unused), stake config (unused). Only the vote account's key is
+/// used; it is not checked to be a vote account. The amount delegated is the
+/// account's lamports minus its rent-exempt reserve, and the model panics if
+/// that is below the minimum delegation.
+///
+/// * `Initialized`: the account becomes `Stake`, delegated to the vote
+///   account from the clock's epoch, with arbitrary observed credits and no
+///   flags.
+/// * `Stake`: if the effective stake (an arbitrary amount no greater than the
+///   delegated stake) is non-zero, the model panics unless the voter is the
+///   same and the stake was deactivated in the current epoch, in which case
+///   the deactivation is cancelled. Otherwise the delegation is reset to the
+///   new amount, voter and epoch, with arbitrary observed credits.
+/// * Any other state panics.
+///
+/// The stake authority is not checked.
 #[cvlr_early_panic::early_panic]
 pub fn process_delegate(accounts: &[AccountInfo]) -> ProgramResult {
     let account_info_iter = &mut accounts.iter();
@@ -206,6 +260,39 @@ pub fn process_delegate(accounts: &[AccountInfo]) -> ProgramResult {
     Ok(())
 }
 
+/// Model of `Split`: moves `split_lamports`, and the corresponding stake, to a
+/// new stake account.
+///
+/// Accounts, in order: source stake account, destination stake account. The
+/// model panics unless the destination's data is exactly
+/// `StakeStateV2::size_of()` bytes and it is `Uninitialized`, and unless
+/// `split_lamports` does not exceed the source's balance. Then, by the source's
+/// state:
+///
+/// * `Stake`: either of the real program's two cases may happen, whatever the
+///   balances:
+///   * the source's delegated stake decreases by `split_lamports` minus its
+///     rent-exempt reserve (saturating), and the destination's stake is that
+///     same amount; or
+///   * the source's delegated stake decreases by `split_lamports`, which
+///     panics if less than the minimum delegation would remain, and the
+///     destination's stake is `split_lamports` minus an arbitrary amount
+///     (saturating).
+///
+///   The model panics if the destination's stake is below the minimum
+///   delegation or the source's delegated stake is smaller than the decrease.
+///   Both accounts are then `Stake` with the source's flags; the destination
+///   has the source's delegation (voter and epochs) and meta, except for its
+///   stake amount and an arbitrary rent-exempt reserve.
+/// * `Initialized`: the destination becomes `Initialized` with the source's
+///   meta and an arbitrary rent-exempt reserve.
+/// * `Uninitialized`: the source must be a signer (otherwise the model
+///   panics); the destination stays `Uninitialized`.
+/// * Any other state panics.
+///
+/// If the whole balance is split, the source becomes `Uninitialized`. The
+/// lamports are then moved with [`relocate_lamports`]. The stake authority and
+/// the destination's rent exemption are not checked.
 #[cvlr_early_panic::early_panic]
 pub fn process_split(accounts: &[AccountInfo], split_lamports: u64) -> ProgramResult {
     let account_info_iter = &mut accounts.iter();
@@ -343,6 +430,20 @@ pub fn process_split(accounts: &[AccountInfo], split_lamports: u64) -> ProgramRe
     Ok(())
 }
 
+/// Model of `Merge`: merges a source stake account into a destination.
+///
+/// Accounts, in order: destination stake account, source stake account,
+/// `Clock` sysvar (unused), stake history (unused). The model panics if both
+/// are the same account, or if either is not `Initialized` or `Stake`, and it
+/// *assumes* both have the same authorities (executions where they differ are
+/// dropped).
+///
+/// The destination becomes `Stake` with its own meta, an arbitrary `Stake`
+/// (see [`nondet_stake`]) and no flags, whatever
+/// the two accounts' delegations were: the merged delegation is not computed.
+/// The source becomes `Uninitialized` and all its lamports move to the
+/// destination. None of the real program's mergeability checks (activation
+/// state, voter, credits) are made, and the stake authority is not checked.
 #[cvlr_early_panic::early_panic]
 pub fn process_merge(accounts: &[AccountInfo]) -> ProgramResult {
     let account_info_iter = &mut accounts.iter();
@@ -522,6 +623,12 @@ fn meta_authorized_authorize(
     }
 }
 
+/// Moves `lamports` from `source_account_info` to `destination_account_info`.
+///
+/// Panics, ending the execution, if the source has fewer than `lamports`, if
+/// the destination's balance would overflow, or if either account's lamports
+/// are currently borrowed. Moving lamports from an account to itself leaves
+/// its balance unchanged.
 #[inline(always)]
 pub fn relocate_lamports(
     source_account_info: &AccountInfo,

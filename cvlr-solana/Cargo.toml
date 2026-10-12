@@ -25,10 +25,17 @@ pre-release-replacements = [
 
 [features]
 default = []
-rt = ["cvlr-nondet/rt", "cvlr-asserts/rt", "cvlr-mathint/rt"]
+rt = [
+    "dep:solana-sdk",
+    "cvlr-nondet/rt",
+    "cvlr-asserts/rt",
+    "cvlr-mathint/rt",
+    "cvlr-log/rt",
+]
 
 [dependencies]
 solana-program = { workspace =  true }
+solana-sdk = { workspace = true, optional = true }
 arrayref = { workspace = true }
 
 cvlr-asserts = { workspace = true }
