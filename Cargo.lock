@@ -200,7 +200,7 @@ dependencies = [
 
 [[package]]
 name = "cvlr-solana"
-version = "0.6.0-dev"
+version = "0.6.0"
 dependencies = [
  "arrayref",
  "cvlr-asserts",
@@ -220,7 +220,7 @@ dependencies = [
 
 [[package]]
 name = "cvlr-solana-stake"
-version = "0.6.0-dev"
+version = "0.6.0"
 dependencies = [
  "arrayref",
  "borsh",
@@ -241,7 +241,7 @@ dependencies = [
 
 [[package]]
 name = "cvlr-spl-token"
-version = "0.6.0-dev"
+version = "0.6.0"
 dependencies = [
  "arrayref",
  "cvlr-asserts",

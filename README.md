@@ -45,9 +45,9 @@ Add the relevant crates to your `Cargo.toml`:
 
 ```toml
 [dependencies]
-cvlr-solana = "0.5.1"
-cvlr-spl-token = "0.5.1"  # If you need SPL Token modeling
-cvlr-solana-stake = "0.5.1"  # If you need Stake Program modeling
+cvlr-solana = "0.6.0"
+cvlr-spl-token = "0.6.0"  # If you need SPL Token modeling
+cvlr-solana-stake = "0.6.0"  # If you need Stake Program modeling
 ```
 
 ### Solana SDK generations
@@ -74,4 +74,4 @@ This project is licensed under the MIT License.
 
 ## Release
 
-**Current release:** `0.5.1` 
+**Current release:** `0.6.0` 
