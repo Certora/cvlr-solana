@@ -8,6 +8,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 <!-- next-header -->
 ## [Unreleased] - ReleaseDate
 
+## [0.5.1] - 2026-10-13
+### Added
+  - Documentation for every public item of `cvlr-solana`, `cvlr-spl-token` and
+    `cvlr-solana-stake`; CI now fails on undocumented public items.
+### Fixed
+  - The `rt` feature builds and links: `solana-sdk` is an optional dependency
+    it enables, it forwards `rt` to `cvlr-log`, and `cvlr-asserts` is required
+    at 0.4.2 or later.
+
 ## [0.5.0] - 2026-01-16
 ### Added
   - model of SPL Stake in cvlr-solana-stake
@@ -72,7 +81,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Removed
 
 <!-- next-url -->
-[Unreleased]: https://github.com/Certora/cvlr-solana/compare/cvlr-solana-v0.5.0...HEAD
+[Unreleased]: https://github.com/Certora/cvlr-solana/compare/cvlr-solana-v0.5.1...HEAD
+[0.5.1]: https://github.com/Certora/cvlr-solana/compare/cvlr-solana-v0.5.0...cvlr-solana-v0.5.1
 [0.5.0]: https://github.com/Certora/cvlr-solana/compare/v0.4.5...cvlr-solana-v0.5.0
 [0.4.5]: https://github.com/Certora/cvlr-solana/compare/v0.4.3...v0.4.5
 [0.4.3]: https://github.com/Certora/cvlr-solana/compare/v0.4.2...v0.4.3
