@@ -12,6 +12,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     `solana-pubkey`, `solana-cpi`, ...) instead of `solana-program` 2.x.
     Programs still on `solana-program` 2.x stay on 0.5.x.
   - `cvlr-spl-token` is built against `spl-token` 9.
+    The Prover does not yet substitute its CPI mocks into SDK 3 programs: its
+    CPI analysis recognizes only `solana_program::program::invoke` and
+    `invoke_signed`, and these programs call `solana_cpi`'s.
   - `cvlr-solana-stake` takes its stake types from `solana-stake-interface` 5.
   - `invoke!` and `invoke_signed!` call `solana_cpi::invoke_signed_unchecked`,
     and no longer need the calling crate to depend on `solana-program`.

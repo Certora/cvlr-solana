@@ -50,7 +50,7 @@ cvlr-spl-token = "0.5.1"  # If you need SPL Token modeling
 cvlr-solana-stake = "0.5.1"  # If you need Stake Program modeling
 ```
 
-### Solana SDK versions
+### Solana SDK generations
 
 Each release line is built against one generation of the Solana SDK, and a
 program must use the line that matches its own. The two generations have
