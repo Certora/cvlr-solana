@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 <!-- next-header -->
 ## [Unreleased] - ReleaseDate
+
+## [0.6.0] - 2026-10-27
 ### Changed
   - Built against the Solana SDK 3 split crates (`solana-account-info`,
     `solana-pubkey`, `solana-cpi`, ...) instead of `solana-program` 2.x.
@@ -101,7 +103,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Removed
 
 <!-- next-url -->
-[Unreleased]: https://github.com/Certora/cvlr-solana/compare/cvlr-solana-v0.5.1...HEAD
+[Unreleased]: https://github.com/Certora/cvlr-solana/compare/cvlr-solana-v0.6.0...HEAD
+[0.6.0]: https://github.com/Certora/cvlr-solana/compare/cvlr-solana-v0.5.1...cvlr-solana-v0.6.0
 [0.5.1]: https://github.com/Certora/cvlr-solana/compare/cvlr-solana-v0.5.0...cvlr-solana-v0.5.1
 [0.5.0]: https://github.com/Certora/cvlr-solana/compare/v0.4.5...cvlr-solana-v0.5.0
 [0.4.5]: https://github.com/Certora/cvlr-solana/compare/v0.4.3...v0.4.5
