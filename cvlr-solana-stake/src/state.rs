@@ -4,13 +4,11 @@
 //! state.
 
 use cvlr_nondet::havoc::alloc_ref_havoced;
-use solana_program::{
-    account_info::AccountInfo,
-    borsh1::try_from_slice_unchecked,
-    stake::{
-        stake_flags::StakeFlags,
-        state::{Meta, Stake, StakeStateV2},
-    },
+use solana_account_info::AccountInfo;
+use solana_borsh::v1::try_from_slice_unchecked;
+use solana_stake_interface::{
+    stake_flags::StakeFlags,
+    state::{Meta, Stake, StakeStateV2},
 };
 
 use crate::utils::CvlrStdIoWrite;

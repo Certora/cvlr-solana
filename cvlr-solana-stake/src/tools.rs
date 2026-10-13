@@ -2,7 +2,7 @@
 //!
 //! The minimum delegation, as a `Result` like the real program's helper.
 
-use solana_program::program_error::ProgramError;
+use solana_program_error::ProgramError;
 
 /// Returns minimum delegation
 ///

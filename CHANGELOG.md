@@ -7,6 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 <!-- next-header -->
 ## [Unreleased] - ReleaseDate
+### Changed
+  - Built against the Solana SDK 3 split crates (`solana-account-info`,
+    `solana-pubkey`, `solana-cpi`, ...) instead of `solana-program` 2.x.
+    Programs still on `solana-program` 2.x stay on 0.5.x.
+  - `cvlr-spl-token` is built against `spl-token` 9.
+  - `cvlr-solana-stake` takes its stake types from `solana-stake-interface` 5.
+  - `invoke!` and `invoke_signed!` call `solana_cpi::invoke_signed_unchecked`,
+    and no longer need the calling crate to depend on `solana-program`.
+  - The `rt` feature uses `solana-account` instead of `solana-sdk`.
+### Removed
+  - `fun_acc_infos_with_mem_layout`. Use `cvlr_deserialize_nondet_accounts`;
+    `acc_infos_with_mem_layout!` remains as an alias for it.
 
 ## [0.5.1] - 2026-10-13
 ### Added

@@ -7,18 +7,15 @@ use std::io::Write;
 
 use cvlr_asserts::cvlr_assume;
 use cvlr_nondet::nondet;
-use solana_program::{
-    account_info::{next_account_info, AccountInfo},
-    clock::Clock,
-    entrypoint::ProgramResult,
-    program_error::ProgramError,
-    pubkey::Pubkey,
-    stake::{
-        stake_flags::StakeFlags,
-        state::{Delegation, Lockup, Meta, Stake, StakeAuthorize, StakeStateV2},
-    },
-    sysvar::Sysvar,
+use solana_account_info::{next_account_info, AccountInfo};
+use solana_clock::Clock;
+use solana_program_error::{ProgramError, ProgramResult};
+use solana_pubkey::Pubkey;
+use solana_stake_interface::{
+    stake_flags::StakeFlags,
+    state::{Delegation, Lockup, Meta, Stake, StakeAuthorize, StakeStateV2},
 };
+use solana_sysvar::SysvarSerialize;
 
 use crate::state::{
     empty_stake_flags, nondet_stake, stake_from_account_info_unchecked, stake_to_slice_unchecked,
@@ -44,6 +41,9 @@ use crate::state::{
 /// [`relocate_lamports`]. Lockups and the withdraw authority are not
 /// checked.
 #[cvlr_early_panic::early_panic]
+// The model keeps the stake program's former rent rule, the reserve recorded in
+// `Meta`, rather than the current one, `Rent` read at each instruction.
+#[allow(deprecated)]
 pub fn process_withdraw(accounts: &[AccountInfo], withdraw_lamports: u64) -> ProgramResult {
     let account_info_iter = &mut accounts.iter();
 
@@ -294,6 +294,9 @@ pub fn process_delegate(accounts: &[AccountInfo]) -> ProgramResult {
 /// lamports are then moved with [`relocate_lamports`]. The stake authority and
 /// the destination's rent exemption are not checked.
 #[cvlr_early_panic::early_panic]
+// The model keeps the stake program's former rent rule, the reserve recorded in
+// `Meta`, rather than the current one, `Rent` read at each instruction.
+#[allow(deprecated)]
 pub fn process_split(accounts: &[AccountInfo], split_lamports: u64) -> ProgramResult {
     let account_info_iter = &mut accounts.iter();
 
@@ -533,6 +536,9 @@ pub fn process_merge(accounts: &[AccountInfo]) -> ProgramResult {
 
     Ok(())
 }
+// The model keeps the stake program's former rent rule, the reserve recorded in
+// `Meta`, rather than the current one, `Rent` read at each instruction.
+#[allow(deprecated)]
 pub(crate) fn validate_delegated_amount(
     account: &AccountInfo,
     meta: &Meta,

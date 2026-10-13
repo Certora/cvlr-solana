@@ -2,8 +2,8 @@
 resolver = "2"
 members = [
     "cvlr-solana",
-#    "cvlr-spl-token",
-#    "cvlr-solana-stake"
+    "cvlr-spl-token",
+    "cvlr-solana-stake"
 ]
 
 [workspace.package]
@@ -47,6 +47,10 @@ solana-program-option = "3.0.0"
 solana-clock = "3.0.0"
 solana-account = "3.0.0"
 solana-cpi = "3.0.0"
+solana-instruction = "3.0.0"
+solana-borsh = "3.0.0"
+solana-sysvar = "3.0.0"
+solana-stake-interface = "5.0.0"
 
 macrotest = "1"
 trybuild = "1"
@@ -58,6 +62,6 @@ cvlr-log = { version=">= 0.6, <1" }
 cvlr-early-panic = { version=">= 0.6, <1" }
 cvlr-macros = { version=">= 0.6, <1" }
 
-cvlr-solana = { path = "cvlr-solana", version = "=0.5.0" }
-# cvlr-solana-stake = { path = "cvlr-solana-stake", version = "=0.5.0" }
-# cvlr-spl-token = { path = "cvlr-spl-token", version = "=0.5.0" }
+cvlr-solana = { path = "cvlr-solana", version = "=0.6.0-dev" }
+cvlr-solana-stake = { path = "cvlr-solana-stake", version = "=0.6.0-dev" }
+cvlr-spl-token = { path = "cvlr-spl-token", version = "=0.6.0-dev" }

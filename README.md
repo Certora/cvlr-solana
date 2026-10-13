@@ -50,6 +50,18 @@ cvlr-spl-token = "0.5.1"  # If you need SPL Token modeling
 cvlr-solana-stake = "0.5.1"  # If you need Stake Program modeling
 ```
 
+### Solana SDK versions
+
+Each release line is built against one generation of the Solana SDK, and a
+program must use the line that matches its own. The two generations have
+different `AccountInfo` types, so a mismatched pair does not compile.
+
+| cvlr-solana | Solana SDK |
+| --- | --- |
+| 0.6.x | the split `solana-*` crates at 3.x (`solana-account-info` 3) |
+| 0.5.x | `solana-program` 2.x |
+| 0.4.x | `solana-program` 1.18 |
+
 ## Documentation
 
 - [API Documentation](https://docs.rs/cvlr/latest)
