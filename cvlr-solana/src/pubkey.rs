@@ -1,10 +1,21 @@
+//! Wrappers that make a [`Pubkey`] loggable with `clog!`.
+
 use cvlr_log::cvlr_log_with;
 use solana_program::pubkey::Pubkey;
 use std::ops::Deref;
 
 /// A lightweight wrapper around a borrowed [`Pubkey`] that provides
 /// convenience methods and logging capabilities.
-pub struct Pk<'a>(pub &'a Pubkey);
+///
+/// `Pubkey` does not implement `CvlrLog`; wrap it to log it:
+/// `clog!(Pk(acc.key) => "vault key")`. The key is shown as a 256-bit integer
+/// (its 32 bytes read as a little-endian number), so two logged keys can be
+/// compared at a glance. `Pk` dereferences to `Pubkey` and converts from and
+/// to `&Pubkey`.
+pub struct Pk<'a>(
+    /// The wrapped key.
+    pub &'a Pubkey,
+);
 impl Pk<'_> {
     /// Converts this borrowed `Pk` into an owned [`PkO`] instance.
     pub fn to_owned(&self) -> PkO {
@@ -48,6 +59,9 @@ impl<'a> From<Pk<'a>> for &'a Pubkey {
 }
 
 /// An owned wrapper around [`Pubkey`] that complements [`Pk`].
+///
+/// It dereferences to `Pubkey` but does not implement `CvlrLog`; to log it,
+/// log `Pk(&pko)`.
 pub struct PkO(Pubkey);
 impl PkO {
     /// Creates a new owned wrapper from a [`Pubkey`].

@@ -1,5 +1,20 @@
-/// Summaries for Token and Token-2022
-///
+//! Summaries for Token and Token-2022
+//!
+//! Field accessors for SPL Token accounts and mints, and models of Token
+//! instructions that update those fields directly. The accessors read and
+//! write the fixed-offset base layout (165 bytes for a token account, 82 for
+//! a mint), which Token-2022 shares, and panic if the account's data is
+//! shorter. Each borrows the account data mutably, so it panics if the data is
+//! already borrowed.
+//!
+//! The instruction models perform none of the Token program's checks
+//! (ownership, authority and signer, mint match, frozen state, delegation) and
+//! ignore Token-2022 extensions; they only move amounts. Arithmetic overflow
+//! in a model panics, which ends that execution.
+//!
+//! Nothing substitutes them for a CPI on this release line. A program's call
+//! to the Token program has to be replaced with a call to the model, in the
+//! code under verification.
 use arrayref::{array_mut_ref, array_ref, array_refs, mut_array_refs};
 use solana_program::{
     account_info::AccountInfo, entrypoint::ProgramResult, program_error::ProgramError,
@@ -8,7 +23,9 @@ use solana_program::{
 use cvlr_asserts::cvlr_assume;
 use cvlr_mathint::NativeInt as MathInt;
 
-/// Unpack only amount from account [info] base
+/// Unpack only amount from account `info` base
+///
+/// Returns the `amount` field of the token account `info`.
 pub fn spl_token_account_get_amount(info: &AccountInfo) -> u64 {
     let data = info.data.borrow_mut();
     let base = array_ref![*data, 0, 165];
@@ -19,7 +36,10 @@ pub fn spl_token_account_get_amount(info: &AccountInfo) -> u64 {
     val
 }
 
-/// Pack only [amount] from account [info] base
+/// Pack only `amount` from account `info` base
+///
+/// Sets the `amount` field of the token account `info` to `amount`; no other
+/// byte is changed.
 pub fn spl_token_account_set_amount(amount: u64, info: &AccountInfo) {
     let mut data = info.data.borrow_mut();
     let dst = array_mut_ref![*data, 0, 165];
@@ -36,7 +56,9 @@ pub fn spl_token_account_set_amount(amount: u64, info: &AccountInfo) {
     *amount_dst = amount.to_le_bytes();
 }
 
-/// Unpack only supply from [mint] base
+/// Unpack only supply from `mint` base
+///
+/// Returns the `supply` field of the mint account `mint`.
 pub fn spl_mint_get_supply(mint: &AccountInfo) -> u64 {
     let data = mint.data.borrow_mut();
     let src = array_ref![*data, 0, 82];
@@ -47,7 +69,9 @@ pub fn spl_mint_get_supply(mint: &AccountInfo) -> u64 {
     supply
 }
 
-/// Unpack only decimals from [mint] base
+/// Unpack only decimals from `mint` base
+///
+/// Returns the `decimals` field of the mint account `mint`.
 pub fn spl_mint_get_decimals(mint: &AccountInfo) -> u8 {
     let data = mint.data.borrow_mut();
     let src = array_ref![*data, 0, 82];
@@ -58,7 +82,10 @@ pub fn spl_mint_get_decimals(mint: &AccountInfo) -> u8 {
     decimals
 }
 
-/// Pack only [supply] from [mint] base
+/// Pack only `supply` from `mint` base
+///
+/// Sets the `supply` field of the mint account `mint` to `supply`; no other
+/// byte is changed.
 pub fn spl_mint_set_supply(supply: u64, mint: &AccountInfo) {
     let mut data = mint.data.borrow_mut();
     let dst = array_mut_ref![*data, 0, 82];
@@ -72,7 +99,7 @@ pub fn spl_mint_set_supply(supply: u64, mint: &AccountInfo) {
     *supply_dst = supply.to_le_bytes();
 }
 
-/// Transfer [amount] from [src_info] to [dst_info] without any check
+/// Transfer `amount` from `src_info` to `dst_info` without any check
 fn spl_transfer<'a>(
     src_info: &AccountInfo<'a>,
     dst_info: &AccountInfo<'a>,
@@ -98,6 +125,13 @@ fn spl_transfer<'a>(
 }
 
 /// Summary for SPL Token transfer instruction
+///
+/// If `src_info` and `dst_info` have different keys, assumes the source
+/// holds at least `amount` (executions where it does not are dropped), moves
+/// `amount` from the source's to the destination's token amount, and panics
+/// if the destination amount would overflow. If the keys are equal, nothing
+/// changes. Always returns `Ok(())`. `authority_info` is ignored, and neither
+/// account's mint or owner is checked.
 pub fn spl_token_transfer<'a>(
     src_info: &AccountInfo<'a>,
     dst_info: &AccountInfo<'a>,
@@ -109,6 +143,9 @@ pub fn spl_token_transfer<'a>(
 
 /// Summary for SPL Token 2022 transfer instruction
 /// This summary ignores extensions from SPL Token 2022 (e.g., fees)
+///
+/// Identical to [`spl_token_transfer`]; in particular no transfer fee is
+/// withheld.
 pub fn spl_token_2022_transfer<'a>(
     src_info: &AccountInfo<'a>,
     dst_info: &AccountInfo<'a>,
@@ -119,6 +156,10 @@ pub fn spl_token_2022_transfer<'a>(
 }
 
 /// Summary for SPL Token MintTo instruction
+///
+/// Adds `amount` to the mint's supply and to the destination's token amount,
+/// panicking if either would overflow. Always returns `Ok(())`. `_authority`
+/// is ignored, and `dst_info` is not checked to belong to the mint.
 pub fn spl_mint_to<'a>(
     mint_info: &AccountInfo<'a>,
     dst_info: &AccountInfo<'a>,
@@ -138,6 +179,12 @@ pub fn spl_mint_to<'a>(
 }
 
 /// Summary for SPL Token Burn instruction
+///
+/// Assumes the source holds at least `amount` (executions where it does not
+/// are dropped), then subtracts `amount` from the source's token amount and
+/// from the mint's supply, panicking if the supply would underflow. Always
+/// returns `Ok(())`. Note the argument order: mint first, then the token
+/// account. `_authority` is ignored.
 pub fn spl_burn<'a>(
     mint_info: &AccountInfo<'a>,
     src_info: &AccountInfo<'a>,
@@ -160,6 +207,16 @@ pub fn spl_burn<'a>(
 }
 
 /// Summary for SPL Token close_account instruction
+///
+/// Returns `Err(ProgramError::InvalidAccountData)` if `src_info` and
+/// `dst_info` have **different** keys, or if the source's token amount is
+/// non-zero; otherwise returns `Ok(())`. It changes no account: lamports are
+/// not moved to the destination and the source is not closed or cleared.
+///
+/// Note that the key check is the reverse of the Token program's, which
+/// rejects a close whose source and destination are the *same* account. As
+/// written, this model succeeds only for self-closes, so a rule that closes a
+/// token account into a different destination sees an error.
 pub fn spl_close_account<'a>(
     src_info: &AccountInfo<'a>,
     dst_info: &AccountInfo<'a>,
@@ -180,7 +237,8 @@ pub fn spl_close_account<'a>(
 }
 
 macro_rules! impl_nondet_mint {
-    ($name:ident, $mint_ty:ty) => {
+    ($(#[$doc:meta])* $name:ident, $mint_ty:ty) => {
+        $(#[$doc])*
         pub fn $name() -> $mint_ty {
             use $mint_ty as Mint;
             Mint {
@@ -194,5 +252,21 @@ macro_rules! impl_nondet_mint {
     };
 }
 
-impl_nondet_mint!(cvlr_nondet_token_mint, spl_token::state::Mint);
-impl_nondet_mint!(cvlr_nondet_token_2022_mint, spl_token_2022::state::Mint);
+impl_nondet_mint!(
+    /// An arbitrary SPL Token mint.
+    ///
+    /// `supply`, `decimals` and `is_initialized` are arbitrary, and
+    /// `mint_authority` and `freeze_authority` are each arbitrarily `None` or an
+    /// arbitrary key. Nothing ties it to an account: to read a mint that is
+    /// stored in an account's data, use [`spl_mint_get_supply`] and
+    /// [`spl_mint_get_decimals`].
+    cvlr_nondet_token_mint,
+    spl_token::state::Mint
+);
+impl_nondet_mint!(
+    /// An arbitrary SPL Token 2022 mint, with no extensions.
+    ///
+    /// The same as [`cvlr_nondet_token_mint`], for `spl_token_2022`'s `Mint`.
+    cvlr_nondet_token_2022_mint,
+    spl_token_2022::state::Mint
+);

@@ -19,3 +19,8 @@ jobs:
 
       - name: Run Clippy Linting
         run: cargo clippy -- --deny warnings
+
+      - name: Check Documentation with `cargo doc`
+        run: cargo doc --no-deps --workspace --all-features
+        env:
+          RUSTDOCFLAGS: "-D warnings -D missing_docs"
