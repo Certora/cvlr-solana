@@ -653,7 +653,7 @@ dependencies = [
 
 [[package]]
 name = "cvlr-solana"
-version = "0.4.5"
+version = "0.4.6"
 dependencies = [
  "arrayref",
  "cvlr-asserts",
