@@ -14,10 +14,17 @@ repository.workspace = true
 
 [features]
 default = []
-rt = ["cvlr-nondet/rt", "cvlr-asserts/rt", "cvlr-mathint/rt"]
+rt = [
+    "dep:solana-sdk",
+    "cvlr-nondet/rt",
+    "cvlr-asserts/rt",
+    "cvlr-mathint/rt",
+    "cvlr-log/rt",
+]
 
 [dependencies]
 solana-program = "1.18"
+solana-sdk = { version = "1.18", optional = true }
 spl-token = { version = "4", features = ["no-entrypoint"] }
 spl-token-2022 = { version = "3", features = ["no-entrypoint"] }
 arrayref = "0.3"
