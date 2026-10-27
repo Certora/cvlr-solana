@@ -17,7 +17,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     `invoke_signed`, and these programs call `solana_cpi`'s.
   - `cvlr-solana-stake` takes its stake types from `solana-stake-interface` 5.
   - `invoke!` and `invoke_signed!` call `solana_cpi::invoke_signed_unchecked`,
-    and no longer need the calling crate to depend on `solana-program`.
+    and no longer need the calling crate to depend on `solana-program`. The
+    summary that makes the call return an arbitrary result must name that
+    path: Certora's Solana template names only
+    `solana_program::program::invoke_signed_unchecked`, so add
+    `^solana_cpi::invoke_signed_unchecked$` with the same
+    `#[type((*i32)(r1+0):num)]` annotation.
   - The `rt` feature uses `solana-account` instead of `solana-sdk`.
 ### Removed
   - `fun_acc_infos_with_mem_layout`. Use `cvlr_deserialize_nondet_accounts`;

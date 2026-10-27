@@ -1,6 +1,6 @@
 [package]
 name = "cvlr-spl-token"
-description = "CVLR model for the Solana Token Program 8"
+description = "CVLR model for the Solana Token Program (spl-token 9)"
 version.workspace = true
 edition.workspace = true
 license.workspace = true
