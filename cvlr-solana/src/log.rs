@@ -1,5 +1,5 @@
 use cvlr_log::clog;
-use solana_program::account_info::AccountInfo;
+use solana_account_info::AccountInfo;
 
 /// Logs an account to the counterexample call trace, tagged with the source
 /// text of the argument.

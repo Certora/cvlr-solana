@@ -46,19 +46,29 @@ macro_rules! require_keys_neq {
 
 // We redefine invoke and invoke_signed to avoid the signer checks
 // TODO: we might want to move these macros to mocks
-/// Program-side replacement for `solana_program::program::invoke`.
+/// Program-side replacement for `solana_cpi::invoke`.
 ///
 /// `invoke!(instruction, account_infos)` expands to
-/// `solana_program::program::invoke_signed_unchecked(instruction, account_infos, &[])`,
+/// `solana_cpi::invoke_signed_unchecked(instruction, account_infos, &[])`,
 /// which skips the runtime's signer and privilege checks. Use it in the code
 /// under verification (typically behind the verification feature) in place of
-/// `invoke(...)`; the calling crate must depend on `solana_program`.
+/// `invoke(...)`.
 ///
-/// **This macro does not model the called program.** The standard Prover
-/// summaries (`cvlr_summaries_core.txt` in Certora's Solana template) treat
-/// `invoke_signed_unchecked` as returning an arbitrary result, `Ok` or an
-/// error, with no effect on any account. The callee's effects, such as a token
-/// transfer, are not represented. Because the call no longer goes through
+/// **This macro does not model the called program.** A rule in the
+/// project's summaries file makes the call return an arbitrary result, `Ok`
+/// or an error, with no effect on any account. The rule names the function by
+/// its path, which on this line is `solana_cpi`'s:
+///
+/// ```text
+/// #[type((*i32)(r1+0):num)]
+/// ^solana_cpi::invoke_signed_unchecked$
+/// ```
+///
+/// `cvlr_summaries_core.txt` in Certora's Solana template has this rule only
+/// for `solana_program::program::invoke_signed_unchecked`, the
+/// `solana-program` 2.x path, so a project using it adds the rule above.
+/// Without it, the call is not summarized. The callee's effects, such as a
+/// token transfer, are not represented either way. Because the call no longer goes through
 /// `invoke`, the Prover's CPI substitution (see the `cvlr-spl-token` crate)
 /// does not apply to it either. To model a callee, call a model of it
 /// directly (e.g. `cvlr_solana::token::spl_token_transfer`) or mock the
@@ -66,20 +76,21 @@ macro_rules! require_keys_neq {
 #[macro_export]
 macro_rules! invoke {
     ($instruction: expr, $acc_infos: expr $(,)*) => {{
-        solana_program::program::invoke_signed_unchecked($instruction, $acc_infos, &[])
+        $crate::__solana_cpi::invoke_signed_unchecked($instruction, $acc_infos, &[])
     }};
 }
 
-/// Program-side replacement for `solana_program::program::invoke_signed`.
+/// Program-side replacement for `solana_cpi::invoke_signed`.
 ///
 /// `invoke_signed!(instruction, account_infos, signer_seeds)` expands to
-/// `solana_program::program::invoke_signed_unchecked(instruction, account_infos, signer_seeds)`.
+/// `solana_cpi::invoke_signed_unchecked(instruction, account_infos, signer_seeds)`.
 /// As with [`invoke!`](crate::invoke), the called program is **not modeled**:
 /// the call returns an arbitrary result and changes no account under the
-/// standard summaries, and the Prover's CPI substitution does not apply.
+/// summary rule described there, and the Prover's CPI substitution does not
+/// apply.
 #[macro_export]
 macro_rules! invoke_signed {
     ($instruction: expr, $acc_infos: expr, $seeds: expr $(,)*) => {{
-        solana_program::program::invoke_signed_unchecked($instruction, $acc_infos, $seeds)
+        $crate::__solana_cpi::invoke_signed_unchecked($instruction, $acc_infos, $seeds)
     }};
 }

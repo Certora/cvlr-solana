@@ -8,6 +8,28 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 <!-- next-header -->
 ## [Unreleased] - ReleaseDate
 
+## [0.6.0] - 2026-10-27
+### Changed
+  - Built against the Solana SDK 3 split crates (`solana-account-info`,
+    `solana-pubkey`, `solana-cpi`, ...) instead of `solana-program` 2.x.
+    Programs still on `solana-program` 2.x stay on 0.5.x.
+  - `cvlr-spl-token` is built against `spl-token` 9.
+    The Prover does not yet substitute its CPI mocks into SDK 3 programs: its
+    CPI analysis recognizes only `solana_program::program::invoke` and
+    `invoke_signed`, and these programs call `solana_cpi`'s.
+  - `cvlr-solana-stake` takes its stake types from `solana-stake-interface` 5.
+  - `invoke!` and `invoke_signed!` call `solana_cpi::invoke_signed_unchecked`,
+    and no longer need the calling crate to depend on `solana-program`. The
+    summary that makes the call return an arbitrary result must name that
+    path: Certora's Solana template names only
+    `solana_program::program::invoke_signed_unchecked`, so add
+    `^solana_cpi::invoke_signed_unchecked$` with the same
+    `#[type((*i32)(r1+0):num)]` annotation.
+  - The `rt` feature uses `solana-account` instead of `solana-sdk`.
+### Removed
+  - `fun_acc_infos_with_mem_layout`. Use `cvlr_deserialize_nondet_accounts`;
+    `acc_infos_with_mem_layout!` remains as an alias for it.
+
 ## [0.5.1] - 2026-10-13
 ### Added
   - Documentation for every public item of `cvlr-solana`, `cvlr-spl-token` and
@@ -81,7 +103,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Removed
 
 <!-- next-url -->
-[Unreleased]: https://github.com/Certora/cvlr-solana/compare/cvlr-solana-v0.5.1...HEAD
+[Unreleased]: https://github.com/Certora/cvlr-solana/compare/cvlr-solana-v0.6.0...HEAD
+[0.6.0]: https://github.com/Certora/cvlr-solana/compare/cvlr-solana-v0.5.1...cvlr-solana-v0.6.0
 [0.5.1]: https://github.com/Certora/cvlr-solana/compare/cvlr-solana-v0.5.0...cvlr-solana-v0.5.1
 [0.5.0]: https://github.com/Certora/cvlr-solana/compare/v0.4.5...cvlr-solana-v0.5.0
 [0.4.5]: https://github.com/Certora/cvlr-solana/compare/v0.4.3...v0.4.5

@@ -5,10 +5,10 @@
 //!
 //! When CPI analysis is enabled (Prover option `-solanaCpiAnalysis true`; it
 //! is off by default and experimental), the Solana Prover inspects every call
-//! to `solana_program::program::invoke` and `invoke_signed`. If it can resolve
-//! the invoked program to SPL Token or Token-2022 and the instruction's first
-//! data byte to one of the instructions below, it replaces the call with a
-//! call to the matching function of this module:
+//! to `invoke` and `invoke_signed`. If it can resolve the invoked program to
+//! SPL Token or Token-2022 and the instruction's first data byte to one of the
+//! instructions below, it replaces the call with a call to the matching
+//! function of this module:
 //!
 //! | instruction (discriminant) | `invoke` | `invoke_signed` |
 //! | --- | --- | --- |
@@ -23,6 +23,11 @@
 //! ignored: a rule reaching it fails with "Unresolved CPI call". CPIs made
 //! through other functions, such as `invoke_signed_unchecked` (which
 //! `cvlr_solana::invoke!` uses), are not substituted.
+//!
+//! The Prover recognizes those calls by name, and currently only as
+//! `solana_program::program::invoke` and `invoke_signed`. Programs built on this
+//! release call `solana_cpi::invoke` and `invoke_signed`, which it does not yet
+//! recognize, so their CPIs are not substituted.
 //!
 //! The Prover finds these functions by name in the compiled program, so they
 //! must be linked into it: invoke
@@ -43,11 +48,9 @@
 //! instruction does.
 
 use cvlr_asserts::*;
-use solana_program::{
-    account_info::{next_account_info, AccountInfo},
-    entrypoint::ProgramResult,
-    instruction::Instruction,
-};
+use solana_account_info::{next_account_info, AccountInfo};
+use solana_instruction::Instruction;
+use solana_program_error::ProgramResult;
 use spl_token::instruction::transfer;
 
 /*******************************************************************************

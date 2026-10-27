@@ -17,7 +17,13 @@ default = []
 rt = ["cvlr-nondet/rt", "cvlr-asserts/rt", "cvlr-mathint/rt"]
 
 [dependencies]
-solana-program = { workspace = true }
+solana-account-info = { workspace = true }
+solana-borsh = { workspace = true }
+solana-clock = { workspace = true }
+solana-program-error = { workspace = true }
+solana-pubkey = { workspace = true }
+solana-stake-interface = { workspace = true, features = ["borsh"] }
+solana-sysvar = { workspace = true, features = ["bincode"] }
 arrayref = { workspace = true }
 borsh = { workspace = true }
 

@@ -1,5 +1,5 @@
 use cvlr_nondet::nondet;
-use solana_program::clock::Slot;
+use solana_clock::Slot;
 
 static mut CVT_CLOCK_SLOT: Option<Slot> = None;
 

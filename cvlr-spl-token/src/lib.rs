@@ -29,7 +29,9 @@ mod base {
 // operations.
 /// `spl_token::instruction`, re-exported unchanged.
 pub mod instruction {
-    // Re-export everything from `spl_token::instruction`.
+    // Re-export everything from `spl_token::instruction`. Deprecated in favour of
+    // `spl_token_interface::instruction`, but this crate stands in for `spl_token`.
+    #[allow(deprecated)]
     pub use spl_token::instruction::*;
 }
 

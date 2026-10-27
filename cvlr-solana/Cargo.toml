@@ -26,7 +26,7 @@ pre-release-replacements = [
 [features]
 default = []
 rt = [
-    "dep:solana-sdk",
+    "dep:solana-account",
     "cvlr-nondet/rt",
     "cvlr-asserts/rt",
     "cvlr-mathint/rt",
@@ -34,8 +34,14 @@ rt = [
 ]
 
 [dependencies]
-solana-program = { workspace =  true }
-solana-sdk = { workspace = true, optional = true }
+solana-account-info = { workspace = true }
+solana-pubkey = { workspace = true, features = ["bytemuck"] }
+solana-program-error = { workspace = true }
+solana-program-option = { workspace = true }
+solana-clock = { workspace = true }
+solana-account = { workspace = true, optional = true }
+solana-cpi = { workspace = true }
+
 arrayref = { workspace = true }
 
 cvlr-asserts = { workspace = true }

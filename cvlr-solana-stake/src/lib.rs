@@ -19,6 +19,8 @@
 //!   `process_*` function returns `Ok(())` whenever it returns.
 //! * Where an instruction reads the clock, the clock account must be the
 //!   `Clock` sysvar with valid contents; other executions are dropped.
+//! * Rent-exemption is checked against `Meta::rent_exempt_reserve`, as the
+//!   Stake program did before it began computing rent from the `Rent` sysvar.
 //!
 //! [`state`] reads and writes `StakeStateV2` in account data.
 pub mod processor;

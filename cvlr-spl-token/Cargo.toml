@@ -1,6 +1,6 @@
 [package]
 name = "cvlr-spl-token"
-description = "CVLR model for the Solana Token Program 8"
+description = "CVLR model for the Solana Token Program (spl-token 9)"
 version.workspace = true
 edition.workspace = true
 license.workspace = true
@@ -17,9 +17,11 @@ default = []
 rt = ["cvlr-nondet/rt", "cvlr-asserts/rt", "cvlr-mathint/rt"]
 
 [dependencies]
-solana-program = { workspace = true}
+solana-account-info = { workspace = true }
+solana-instruction = { workspace = true }
+solana-program-error = { workspace = true }
 arrayref = { workspace = true } 
-spl-token = { version = "8", features = ["no-entrypoint"] }
+spl-token = { version = "9", features = ["no-entrypoint"] }
 
 
 cvlr-asserts = { workspace = true }
