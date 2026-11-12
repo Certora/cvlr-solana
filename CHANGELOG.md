@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 <!-- next-header -->
 ## [Unreleased] - ReleaseDate
+
+## [0.6.1] - 2026-11-12
 ### Fixed
   - `cvlr_new_account_info` (and so `cvlr_deserialize_nondet_accounts`) reads
     the `is_signer`, `is_writable` and `executable` flags without branching.
@@ -109,7 +111,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Removed
 
 <!-- next-url -->
-[Unreleased]: https://github.com/Certora/cvlr-solana/compare/cvlr-solana-v0.6.0...HEAD
+[Unreleased]: https://github.com/Certora/cvlr-solana/compare/cvlr-solana-v0.6.1...HEAD
+[0.6.1]: https://github.com/Certora/cvlr-solana/compare/cvlr-solana-v0.6.0...cvlr-solana-v0.6.1
 [0.6.0]: https://github.com/Certora/cvlr-solana/compare/cvlr-solana-v0.5.1...cvlr-solana-v0.6.0
 [0.5.1]: https://github.com/Certora/cvlr-solana/compare/cvlr-solana-v0.5.0...cvlr-solana-v0.5.1
 [0.5.0]: https://github.com/Certora/cvlr-solana/compare/v0.4.5...cvlr-solana-v0.5.0
