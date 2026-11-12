@@ -330,6 +330,22 @@ mod rt_impls {
     }
 }
 
+/// Reads a serialized account flag without branching on it.
+///
+/// The runtime serializes each flag as 0 or 1, so the byte is assumed to be
+/// one of those and taken as the `bool` directly. Comparing it with 0 instead
+/// compiles to a branch on SBF, and the three flag branches of an account do
+/// not fold into selects in the Prover: each account would multiply the
+/// rule's paths by 8.
+#[inline(always)]
+#[allow(clippy::transmute_int_to_bool)]
+unsafe fn read_flag(flag: *const u8) -> bool {
+    use cvlr_asserts::cvlr_assume;
+    let byte = *flag;
+    cvlr_assume!(byte <= 1);
+    core::mem::transmute::<u8, bool>(byte)
+}
+
 #[allow(unused_assignments)]
 unsafe fn cvlr_new_account_info_unchecked<'a>() -> AccountInfo<'a> {
     use cvlr_asserts::cvlr_assume;
@@ -352,13 +368,13 @@ unsafe fn cvlr_new_account_info_unchecked<'a>() -> AccountInfo<'a> {
 
     offset += size_of::<u8>();
 
-    let is_signer = *(input.add(offset) as *const u8) != 0;
+    let is_signer = read_flag(input.add(offset));
     offset += size_of::<u8>();
 
-    let is_writable = *(input.add(offset) as *const u8) != 0;
+    let is_writable = read_flag(input.add(offset));
     offset += size_of::<u8>();
 
-    let executable = *(input.add(offset) as *const u8) != 0;
+    let executable = read_flag(input.add(offset));
     offset += size_of::<u8>();
 
     let len_with_key_ptr: *mut u8 =
@@ -441,13 +457,13 @@ unsafe fn _cvlr_new_account_info_unchecked() -> AccountInfo<'static> {
 
     offset += size_of::<u8>();
 
-    let is_signer = *(input.add(offset) as *const u8) != 0;
+    let is_signer = read_flag(input.add(offset));
     offset += size_of::<u8>();
 
-    let is_writable = *(input.add(offset) as *const u8) != 0;
+    let is_writable = read_flag(input.add(offset));
     offset += size_of::<u8>();
 
-    let executable = *(input.add(offset) as *const u8) != 0;
+    let executable = read_flag(input.add(offset));
     offset += size_of::<u8>();
 
     let original_data_len_offset = offset;
