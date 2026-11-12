@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 <!-- next-header -->
 ## [Unreleased] - ReleaseDate
+### Fixed
+  - `cvlr_new_account_info` (and so `cvlr_deserialize_nondet_accounts`) reads
+    the `is_signer`, `is_writable` and `executable` flags without branching.
+    Each account used to add 2^3 paths to a rule, 2^48 for the 16 accounts
+    `cvlr_deserialize_nondet_accounts` builds, enough to time out a
+    handler-level rule that otherwise verifies in seconds.
 
 ## [0.5.1] - 2026-10-13
 ### Added
